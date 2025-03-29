@@ -23,6 +23,8 @@ Route::post('/unlock-scooter', [ScooterController::class, 'unlock']);
 
 
 
+Route::get('/unlock', [ScooterController::class, 'unlockScooter']);
+
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);

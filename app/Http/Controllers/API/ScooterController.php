@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Services\TcpServer;
 
 class ScooterController extends Controller
 {
@@ -23,5 +24,28 @@ class ScooterController extends Controller
             return response()->json(['message' => '🛴 Unlock command sent successfully!']);
         }
     }
+
+
+    protected $unlockService;
+
+    public function __construct(TcpServer $unlockService)
+    {
+        $this->unlockService = $unlockService;
+    }
+
+    public function unlockScooter()
+    {
+        // استبدل بعنوان IP ومنفذ القفل الفعلي
+        $ip = "138.199.198.151"; 
+        $port = 16994;
+
+        // إرسال أمر فتح القفل
+        $response = $this->unlockService->sendUnlockCommand($ip, $port);
+
+        return response()->json(['message' => $response]);
+    }
+
+
+
 }
 
