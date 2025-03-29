@@ -9,7 +9,7 @@ class ScooterController extends Controller
 {
     public function unlock(Request $request)
     {
-        $serverIp = 'YOUR_SERVER_IP'; // ضع هنا IP سيرفرك الفعلي
+        $serverIp = '138.199.198.151'; // ضع هنا IP سيرفرك الفعلي
         $port = 16994;
 
         $socket = stream_socket_client("tcp://$serverIp:$port", $errno, $errstr, 30);
