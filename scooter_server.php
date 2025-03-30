@@ -17,8 +17,11 @@ $server->on('connection', function (Connection $connection) use ($loop) {
     $unlockCommand = hex2bin('AABBCCDD') . "\r\n"; // تأكد من الكود الصحيح وأضف \r\n
     $connection->write($unlockCommand);
     echo "✅ Unlock command sent after connection!\n";
+    
+    // إضافة تأخير بين الأوامر
+    sleep(1); // تأخير 1 ثانية
 
-    // إرسال رسالة "keep-alive" كل 10 ثوانٍ للحفاظ على الاتصال
+    // إرسال رسالة keep-alive كل 10 ثوانٍ للحفاظ على الاتصال
     $loop->addPeriodicTimer(10, function () use ($connection) {
         $keepAlive = hex2bin('AA55'); // استبدل بالكود الصحيح من البروتوكول
         $connection->write($keepAlive);
@@ -28,8 +31,9 @@ $server->on('connection', function (Connection $connection) use ($loop) {
     // الاستماع للبيانات الواردة من السكوتر
     $connection->on('data', function ($data) use ($connection) {
         echo "📩 Received Data: " . bin2hex($data) . "\n"; // استخدم bin2hex لعرض البيانات بشكل Hex
+        echo "Data as string: " . $data . "\n"; // طباعة البيانات كسلسلة نصية
 
-        // معالجة الاستجابة (تأكد من فحص البيانات بشكل مناسب)
+        // معالجة الاستجابة
         if (bin2hex($data) === 'expected_unlock_response') { // استبدل بالقيمة الصحيحة
             echo "✅ Scooter unlocked successfully!\n";
         }
