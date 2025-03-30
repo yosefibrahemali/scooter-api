@@ -9,7 +9,7 @@ use React\Socket\Server;
 $loop = Factory::create();
 
 // إعداد الخادم للاستماع على 0.0.0.0 على المنفذ 16994
-$server = new Server('0.0.0.0:16994', $loop);
+$server = new Server('0.0.0.0:3000', $loop);
 
 $server->on('connection', function ($connection) {
     echo "🛴 Scooter Connected!\n";
