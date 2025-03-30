@@ -6,20 +6,21 @@ use React\EventLoop\Factory;
 use React\Socket\Server;
 
 // إنشاء الحلقة التكرارية
+// إنشاء الحلقة التكرارية
 $loop = Factory::create();
 
-$loop->addPeriodicTimer(10, function () use ($connection) {
-    $keepAlive = hex2bin('AA55'); // استبدل بالكود الصحيح
-    $connection->write($keepAlive);
-    echo "🔄 Sent keep-alive message\n";
-});
-
-
-// إعداد الخادم للاستماع على 0.0.0.0 على المنفذ 16994
+// إعداد الخادم للاستماع على 0.0.0.0 على المنفذ 3000
 $server = new Server('0.0.0.0:3000', $loop);
 
-$server->on('connection', function ($connection) {
+$server->on('connection', function ($connection) use ($loop) {
     echo "🛴 Scooter Connected!\n";
+
+    // إرسال رسالة "keep-alive" كل 10 ثوانٍ للحفاظ على الاتصال
+    $loop->addPeriodicTimer(10, function () use ($connection) {
+        $keepAlive = hex2bin('AA55'); // استبدل بالكود الصحيح من البروتوكول
+        $connection->write($keepAlive);
+        echo "🔄 Sent keep-alive message\n";
+    });
 
     $connection->on('data', function ($data) use ($connection) {
         echo "📩 Received Data: " . bin2hex($data) . "\n";
