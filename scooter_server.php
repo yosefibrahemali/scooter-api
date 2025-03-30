@@ -7,38 +7,51 @@ use React\Socket\Server;
 
 // إنشاء الحلقة التكرارية
 // إنشاء الحلقة التكرارية
-$loop = React\EventLoop\Factory::create();
 
-// إعداد الخادم للاستماع على 0.0.0.0 على المنفذ 3000
-$server = new React\Socket\Server('0.0.0.0:3000', $loop);
+require 'vendor/autoload.php'; // Ensure you have the correct path to your autoload file
 
-$server->on('connection', function ($connection) use ($loop) {
+use React\EventLoop\Factory;
+use React\Socket\Server;
+use React\Socket\Connection;
+
+$loop = Factory::create();
+
+// Setup the server to listen on 0.0.0.0:3000
+$server = new Server('0.0.0.0:3000', $loop);
+
+$server->on('connection', function (Connection $connection) use ($loop) {
     echo "🛴 Scooter Connected!\n";
 
-    // إرسال keep-alive كل 10 ثوانٍ للحفاظ على الاتصال
+    // Send a "keep-alive" message every 10 seconds to keep the connection alive
     $loop->addPeriodicTimer(10, function () use ($connection) {
-        $keepAlive = hex2bin('AA55'); // استبدل بالكود الصحيح من البروتوكول
+        $keepAlive = hex2bin('AA55'); // Replace with the correct code for keeping the connection alive
         $connection->write($keepAlive);
         echo "🔄 Sent keep-alive message\n";
     });
 
-    // إرسال أمر فتح القفل مباشرة بعد الاتصال
-    $unlockCommand = hex2bin('AABBCCDD') . "\r\n"; // تأكد من الكود الصحيح وأضف \r\n إذا لزم الأمر
+    // Send the unlock command immediately after the connection is established
+    $unlockCommand = hex2bin('AABBCCDD') . "\r\n"; // Ensure the correct unlock command with line ending
     $connection->write($unlockCommand);
     echo "✅ Unlock command sent after connection!\n";
 
+    // Listen for incoming data
     $connection->on('data', function ($data) use ($connection) {
         echo "📩 Received Data: " . bin2hex($data) . "\n";
+
+        // Handle the received data (e.g., log it or check if it's a response you need)
+        // For now, you can add more conditions to check specific responses from the scooter
     });
 
+    // When the connection is closed, notify that the scooter is disconnected
     $connection->on('close', function () {
         echo "🔌 Scooter Disconnected!\n";
     });
 });
 
-// تشغيل الخادم
+// Run the server
 echo "🔧 Listening on tcp://0.0.0.0:3000\n";
 $loop->run();
+
 
 
 // public function startScooter()
