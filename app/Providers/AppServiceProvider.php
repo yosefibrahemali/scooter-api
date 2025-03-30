@@ -25,8 +25,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        if (php_sapi_name() !== 'cli') {
-            app(TcpServer::class)->start();
-        }
+        // if (php_sapi_name() !== 'cli') {
+        //     app(TcpServer::class)->start();
+        // }
     }
 }
