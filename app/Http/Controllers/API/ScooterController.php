@@ -14,38 +14,36 @@ class ScooterController extends Controller
         $port = '3000';
         $timeout = 3; // تقليل وقت الانتظار
 
-       
         $context = stream_context_create([
             'socket' => ['connect_timeout' => 5]
         ]);
-    
+
         $socket = @stream_socket_client("tcp://$host:$port", $errno, $errstr, 5, STREAM_CLIENT_CONNECT, $context);
-    
+
         if (!$socket) {
             return response()->json([
                 'success' => false,
                 'message' => "فشل الاتصال بالسكوتر: $errstr ($errno)"
             ], 500);
         }
-    
+
         stream_set_timeout($socket, 3);
-    
-        $command = "*SCOS,OM,868351077123154,S6#\r\n"; // إضافة \r\n
+
+        $command = "*SCOS,OM,868351077123154,S6#\r\n"; // تأكد من إضافة \r\n
         fwrite($socket, $command);
-        
-    
+
         $response = fread($socket, 1024);
         echo "📩 Response: $response\n"; // تسجيل الاستجابة من السكوتر
-        
+
         fclose($socket);
-    
+
         return response()->json([
             'success' => true,
             'message' => "تم إرسال أمر تشغيل السكوتر",
             'response' => trim($response)
         ]);
-
     }
+
 
     public function unlock(Request $request)
     {
