@@ -8,7 +8,7 @@ use App\Services\TcpServer;
 
 class ScooterController extends Controller
 {
-    public function startScooter(Request $request)
+    public function startScooter()
     {
         $host = env('SCOOTER_IP', '138.199.198.151'); // عنوان IP السكوتر
         $port = env('SCOOTER_PORT', 16994); // المنفذ الذي يستمع عليه السكوتر
