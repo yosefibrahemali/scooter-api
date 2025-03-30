@@ -15,7 +15,7 @@ class TcpScooterServer extends Command
      *
      * @var string
      */
-    protected $signature = 'command:name';
+    protected $signature = 'tcp:scooter-server';
 
     /**
      * The console command description.
@@ -94,5 +94,5 @@ class TcpScooterServer extends Command
             echo "Could not connect to WebSocket server: {$e->getMessage()}\n";
         });
     }
-    
+
 }
