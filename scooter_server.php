@@ -8,10 +8,7 @@ use React\Socket\Server;
 // إنشاء الحلقة التكرارية
 // إنشاء الحلقة التكرارية
 
-require 'vendor/autoload.php'; // Ensure you have the correct path to your autoload file
 
-use React\EventLoop\Factory;
-use React\Socket\Server;
 use React\Socket\Connection;
 
 $loop = Factory::create();
@@ -90,3 +87,4 @@ $loop->run();
     
 // }
 
+?>
