@@ -14,41 +14,52 @@ class ScooterController extends Controller
         $host = '138.199.198.151';
         $port = '3000';
         $timeout = 3; // تقليل وقت الانتظار
-
+    
         $context = stream_context_create([
             'socket' => ['connect_timeout' => 5]
         ]);
-
+    
         $socket = @stream_socket_client("tcp://$host:$port", $errno, $errstr, 5, STREAM_CLIENT_CONNECT, $context);
-
+    
         if (!$socket) {
             return response()->json([
                 'success' => false,
                 'message' => "فشل الاتصال بالسكوتر: $errstr ($errno)"
             ], 500);
         }
-
+    
         stream_set_timeout($socket, 3);
-
-        // إرسال أمر فتح القفل للسكوتر
-        $command = "*SCOS,OM,868351077123154,S6#\r\n"; // تأكد من إضافة \r\n
+    
+        // أمر فتح القفل الجديد (تأكد من البروتوكول الصحيح)
+        // إذا كانت هذه هي الطريقة الصحيحة لفتح القفل
+        $command = "*SCOS,OM,868351077123154,S6#\r\n"; // تأكد من أنه الأمر الصحيح
         fwrite($socket, $command);
-
+    
         // قراءة الاستجابة من السكوتر
         $response = fread($socket, 1024);
-
+    
         // تحويل الاستجابة إلى Hexadecimal لعرضها بشكل صحيح
         $responseHex = bin2hex($response);
         echo "📩 Response (Hex): $responseHex\n"; // عرض الاستجابة بالتنسيق Hex
-
+    
         fclose($socket);
-
-        return response()->json([
-            'success' => true,
-            'message' => "تم إرسال أمر تشغيل السكوتر",
-            'response' => trim($responseHex) // عرض الاستجابة بالتنسيق Hex في الرد
-        ]);
+    
+        // التحقق مما إذا كانت الاستجابة متوافقة مع فتح القفل
+        if ($responseHex === 'aabbccdd0d0a') {
+            return response()->json([
+                'success' => true,
+                'message' => "تم إرسال أمر تشغيل السكوتر بنجاح",
+                'response' => trim($responseHex)
+            ]);
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => "فشل في فتح القفل. الاستجابة غير صحيحة.",
+                'response' => trim($responseHex)
+            ]);
+        }
     }
+    
 
 
 
