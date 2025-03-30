@@ -10,24 +10,24 @@ class ScooterController extends Controller
 {
     public function startScooter()
     {
-        $host = env('SCOOTER_IP', '138.199.198.151'); // عنوان IP السكوتر
-        $port = env('SCOOTER_PORT', 16994); // المنفذ الذي يستمع عليه السكوتر
+        $host = env('SCOOTER_IP', '192.168.1.100');
+        $port = env('SCOOTER_PORT', 16994);
+        $timeout = 3; // تقليل وقت الانتظار
 
-        $socket = @fsockopen($host, $port, $errno, $errstr, 5);
+        $socket = @stream_socket_client("tcp://$host:$port", $errno, $errstr, $timeout);
         if (!$socket) {
             return response()->json([
                 'success' => false,
-                'message' => "خطأ في الاتصال بالسكوتر: $errstr ($errno)"
+                'message' => "فشل الاتصال بالسكوتر: $errstr ($errno)"
             ], 500);
         }
 
-        // أمر تشغيل السكوتر
-        $command = "*SCOS,OM,868351077123154,S6#\n";
+        stream_set_timeout($socket, 2); // تقليل مهلة القراءة
 
+        $command = "*SCOS,OM,868351077123154,S6#\n";
         fwrite($socket, $command);
 
-        // قراءة الرد من السكوتر
-        $response = fgets($socket, 1024);
+        $response = fread($socket, 1024);
         fclose($socket);
 
         return response()->json([
