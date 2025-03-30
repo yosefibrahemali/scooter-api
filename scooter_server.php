@@ -7,30 +7,28 @@ use React\Socket\Server;
 
 // إنشاء الحلقة التكرارية
 // إنشاء الحلقة التكرارية
-$loop = Factory::create();
+$loop = React\EventLoop\Factory::create();
 
 // إعداد الخادم للاستماع على 0.0.0.0 على المنفذ 3000
-$server = new Server('0.0.0.0:3000', $loop);
+$server = new React\Socket\Server('0.0.0.0:3000', $loop);
 
 $server->on('connection', function ($connection) use ($loop) {
     echo "🛴 Scooter Connected!\n";
 
-    // إرسال رسالة "keep-alive" كل 10 ثوانٍ للحفاظ على الاتصال
+    // إرسال keep-alive كل 10 ثوانٍ للحفاظ على الاتصال
     $loop->addPeriodicTimer(10, function () use ($connection) {
         $keepAlive = hex2bin('AA55'); // استبدل بالكود الصحيح من البروتوكول
         $connection->write($keepAlive);
         echo "🔄 Sent keep-alive message\n";
     });
 
+    // إرسال أمر فتح القفل مباشرة بعد الاتصال
+    $unlockCommand = hex2bin('AABBCCDD') . "\r\n"; // تأكد من الكود الصحيح وأضف \r\n إذا لزم الأمر
+    $connection->write($unlockCommand);
+    echo "✅ Unlock command sent after connection!\n";
+
     $connection->on('data', function ($data) use ($connection) {
         echo "📩 Received Data: " . bin2hex($data) . "\n";
-
-        // تحقق مما إذا كان الطلب لفتح القفل
-        if ($data === hex2bin('01020304')) { // استبدل بالكود الصحيح من البروتوكول
-            $unlockCommand = hex2bin('AABBCCDD'); // استبدل بالكود الصحيح لفتح القفل
-            $connection->write($unlockCommand);
-            echo "✅ Unlock command sent!\n";
-        }
     });
 
     $connection->on('close', function () {
@@ -41,6 +39,7 @@ $server->on('connection', function ($connection) use ($loop) {
 // تشغيل الخادم
 echo "🔧 Listening on tcp://0.0.0.0:3000\n";
 $loop->run();
+
 
 // public function startScooter()
 // {
