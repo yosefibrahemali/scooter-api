@@ -8,6 +8,7 @@ use App\Services\TcpServer;
 
 class ScooterController extends Controller
 {
+   
     public function startScooter()
     {
         $host = '138.199.198.151';
@@ -29,20 +30,27 @@ class ScooterController extends Controller
 
         stream_set_timeout($socket, 3);
 
+        // إرسال أمر فتح القفل للسكوتر
         $command = "*SCOS,OM,868351077123154,S6#\r\n"; // تأكد من إضافة \r\n
         fwrite($socket, $command);
 
+        // قراءة الاستجابة من السكوتر
         $response = fread($socket, 1024);
-        echo "📩 Response: $response\n"; // تسجيل الاستجابة من السكوتر
+
+        // تحويل الاستجابة إلى Hexadecimal لعرضها بشكل صحيح
+        $responseHex = bin2hex($response);
+        echo "📩 Response (Hex): $responseHex\n"; // عرض الاستجابة بالتنسيق Hex
 
         fclose($socket);
 
         return response()->json([
             'success' => true,
             'message' => "تم إرسال أمر تشغيل السكوتر",
-            'response' => trim($response)
+            'response' => trim($responseHex) // عرض الاستجابة بالتنسيق Hex في الرد
         ]);
     }
+
+
 
 
     public function unlock(Request $request)
