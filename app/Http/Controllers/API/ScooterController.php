@@ -9,57 +9,42 @@ use App\Services\TcpServer;
 class ScooterController extends Controller
 {
    
+  
+    
+
+
     public function startScooter()
     {
         $host = '138.199.198.151';
-        $port = '3000';
-        $timeout = 3; // تقليل وقت الانتظار
-    
+        $port = 3000;
+        $imei = '868351077123154';
+        $command = "*SCOS,OM,$imei,R0,0,20,1234," . round(microtime(true) * 1000) . "#\n"; // استخدام الوقت الحالي بالمللي ثانية
+
         $context = stream_context_create([
             'socket' => ['connect_timeout' => 5]
         ]);
-    
+
         $socket = @stream_socket_client("tcp://$host:$port", $errno, $errstr, 5, STREAM_CLIENT_CONNECT, $context);
-    
+
         if (!$socket) {
             return response()->json([
                 'success' => false,
-                'message' => "فشل الاتصال بالسكوتر: $errstr ($errno)"
+                'message' => "فشل الاتصال بالجهاز: $errstr ($errno)"
             ], 500);
         }
-    
+
         stream_set_timeout($socket, 3);
-    
-        // أمر فتح القفل الجديد (تأكد من البروتوكول الصحيح)
-        // إذا كانت هذه هي الطريقة الصحيحة لفتح القفل
-        $command = "*SCOS,OM,868351077123154,S6#\r\n"; // تأكد من أنه الأمر الصحيح
-        fwrite($socket, $command);
-    
-        // قراءة الاستجابة من السكوتر
+        fwrite($socket, $command); // إرسال الأمر
+
         $response = fread($socket, 1024);
-    
-        // تحويل الاستجابة إلى Hexadecimal لعرضها بشكل صحيح
-        $responseHex = bin2hex($response);
-        echo "📩 Response (Hex): $responseHex\n"; // عرض الاستجابة بالتنسيق Hex
-    
         fclose($socket);
-    
-        // التحقق مما إذا كانت الاستجابة متوافقة مع فتح القفل
-        if ($responseHex === 'aabbccdd0d0a') {
-            return response()->json([
-                'success' => true,
-                'message' => "تم إرسال أمر تشغيل السكوتر بنجاح",
-                'response' => trim($responseHex)
-            ]);
-        } else {
-            return response()->json([
-                'success' => false,
-                'message' => "فشل في فتح القفل. الاستجابة غير صحيحة.",
-                'response' => trim($responseHex)
-            ]);
-        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "تم إرسال أمر التشغيل بنجاح",
+            'response' => trim($response)
+        ]);
     }
-    
 
 
 
