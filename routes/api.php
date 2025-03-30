@@ -17,6 +17,9 @@ use App\Http\Controllers\API\ScooterController;
 */
 
 
+
+Route::post('/scooter/start', [ScooterController::class, 'startScooter']);
+
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/unlock-scooter', [ScooterController::class, 'unlock']);

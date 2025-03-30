@@ -8,6 +8,35 @@ use App\Services\TcpServer;
 
 class ScooterController extends Controller
 {
+    public function startScooter(Request $request)
+    {
+        $host = env('SCOOTER_IP', '138.199.198.151'); // عنوان IP السكوتر
+        $port = env('SCOOTER_PORT', 16994); // المنفذ الذي يستمع عليه السكوتر
+
+        $socket = @fsockopen($host, $port, $errno, $errstr, 5);
+        if (!$socket) {
+            return response()->json([
+                'success' => false,
+                'message' => "خطأ في الاتصال بالسكوتر: $errstr ($errno)"
+            ], 500);
+        }
+
+        // أمر تشغيل السكوتر
+        $command = "*SCOS,OM,868351077123154,S6#\n";
+
+        fwrite($socket, $command);
+
+        // قراءة الرد من السكوتر
+        $response = fgets($socket, 1024);
+        fclose($socket);
+
+        return response()->json([
+            'success' => true,
+            'message' => "تم إرسال أمر تشغيل السكوتر",
+            'response' => trim($response)
+        ]);
+    }
+
     public function unlock(Request $request)
     {
         $serverIp = '138.199.198.151'; // ضع هنا IP سيرفرك الفعلي
