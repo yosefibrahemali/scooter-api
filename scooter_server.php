@@ -1,14 +1,8 @@
 <?php
-
-require 'vendor/autoload.php';
+require 'vendor/autoload.php'; // تأكد من المسار الصحيح
 
 use React\EventLoop\Factory;
 use React\Socket\Server;
-
-// إنشاء الحلقة التكرارية
-// إنشاء الحلقة التكرارية
-
-
 use React\Socket\Connection;
 
 $loop = Factory::create();
@@ -33,7 +27,7 @@ $server->on('connection', function (Connection $connection) use ($loop) {
 
     // الاستماع للبيانات الواردة من السكوتر
     $connection->on('data', function ($data) use ($connection) {
-        echo "📩 Received Data: " . bin2hex($data) . "\n";
+        echo "📩 Received Data: " . bin2hex($data) . "\n"; // استخدم bin2hex لعرض البيانات بشكل Hex
 
         // معالجة الاستجابة (تأكد من فحص البيانات بشكل مناسب)
         if (bin2hex($data) === 'expected_unlock_response') { // استبدل بالقيمة الصحيحة
@@ -50,42 +44,4 @@ $server->on('connection', function (Connection $connection) use ($loop) {
 // تشغيل الخادم
 echo "🔧 Listening on tcp://0.0.0.0:3000\n";
 $loop->run();
-
-
-// public function startScooter()
-// {
-//     $host = '138.199.198.151';
-//     $port = '3000';
-//     $timeout = 3; // تقليل وقت الانتظار
-
-   
-//     $context = stream_context_create([
-//         'socket' => ['connect_timeout' => 5]
-//     ]);
-
-//     $socket = @stream_socket_client("tcp://$host:$port", $errno, $errstr, 5, STREAM_CLIENT_CONNECT, $context);
-
-//     if (!$socket) {
-//         return response()->json([
-//             'success' => false,
-//             'message' => "فشل الاتصال بالسكوتر: $errstr ($errno)"
-//         ], 500);
-//     }
-
-//     stream_set_timeout($socket, 3);
-
-//     $command = "*SCOS,OM,868351077123154,S6#\n";
-//     fwrite($socket, $command);
-
-//     $response = fread($socket, 1024);
-//     fclose($socket);
-
-//     return response()->json([
-//         'success' => true,
-//         'message' => "تم إرسال أمر تشغيل السكوتر",
-//         'response' => trim($response)
-//     ]);
-    
-// }
-
 ?>
