@@ -10,31 +10,38 @@ class ScooterController extends Controller
 {
     public function startScooter()
     {
-        $host = env('SCOOTER_IP', '138.199.198.151');
-        $port = env('SCOOTER_PORT', 3000);
+        $host = '138.199.198.151';
+        $port = '3000';
         $timeout = 3; // تقليل وقت الانتظار
 
-        $socket = @stream_socket_client("tcp://$host:$port", $errno, $errstr, $timeout);
+       
+        $context = stream_context_create([
+            'socket' => ['connect_timeout' => 5]
+        ]);
+    
+        $socket = @stream_socket_client("tcp://$host:$port", $errno, $errstr, 5, STREAM_CLIENT_CONNECT, $context);
+    
         if (!$socket) {
             return response()->json([
                 'success' => false,
                 'message' => "فشل الاتصال بالسكوتر: $errstr ($errno)"
             ], 500);
         }
-
-        stream_set_timeout($socket, 2); // تقليل مهلة القراءة
-
+    
+        stream_set_timeout($socket, 3);
+    
         $command = "*SCOS,OM,868351077123154,S6#\n";
         fwrite($socket, $command);
-
+    
         $response = fread($socket, 1024);
         fclose($socket);
-
+    
         return response()->json([
             'success' => true,
             'message' => "تم إرسال أمر تشغيل السكوتر",
             'response' => trim($response)
         ]);
+        
     }
 
     public function unlock(Request $request)
