@@ -10,8 +10,8 @@ class ScooterController extends Controller
 {
     public function startScooter()
     {
-        $host = env('SCOOTER_IP', '192.168.1.100');
-        $port = env('SCOOTER_PORT', 16994);
+        $host = env('SCOOTER_IP', '138.199.198.151');
+        $port = env('SCOOTER_PORT', 3000);
         $timeout = 3; // تقليل وقت الانتظار
 
         $socket = @stream_socket_client("tcp://$host:$port", $errno, $errstr, $timeout);
