@@ -30,10 +30,13 @@ class ScooterController extends Controller
     
         stream_set_timeout($socket, 3);
     
-        $command = "*SCOS,OM,868351077123154,S6#\n";
+        $command = "*SCOS,OM,868351077123154,S6#\r\n"; // إضافة \r\n
         fwrite($socket, $command);
+        
     
         $response = fread($socket, 1024);
+        echo "📩 Response: $response\n"; // تسجيل الاستجابة من السكوتر
+        
         fclose($socket);
     
         return response()->json([
@@ -41,7 +44,7 @@ class ScooterController extends Controller
             'message' => "تم إرسال أمر تشغيل السكوتر",
             'response' => trim($response)
         ]);
-        
+
     }
 
     public function unlock(Request $request)
