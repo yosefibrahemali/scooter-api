@@ -11,6 +11,7 @@
         "laravel/framework": "^9.19",
         "laravel/sanctum": "^3.3",
         "laravel/tinker": "^2.7",
+        "livewire/livewire": "^2.12",
         "react/event-loop": "^1.5",
         "react/socket": "^1.16"
     },

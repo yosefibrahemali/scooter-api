@@ -2,19 +2,18 @@
 
 namespace App\Services;
 
+use App\Models\ScooterConnection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class TcpServer
 {
     protected $host = '0.0.0.0';
     protected $port = 3000;
-    protected $clients = [];
 
     public function start()
     {
         set_time_limit(0);
-
-        // Create and bind socket
         $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
         socket_bind($socket, $this->host, $this->port);
         socket_listen($socket);
@@ -25,25 +24,25 @@ class TcpServer
             $client = socket_accept($socket);
             $clientIP = $this->getClientIP($client);
 
-            // Add client to active list
-            $this->clients[$clientIP] = [
-                'ip' => $clientIP,
-                'connected_at' => now(),
-            ];
+            // Save connection to database
+            ScooterConnection::updateOrCreate(
+                ['scooter_ip' => $clientIP],
+                ['connected_at' => now(), 'disconnected_at' => null]
+            );
 
             Log::info("Scooter Connected: " . $clientIP);
 
             $input = socket_read($client, 1024);
             Log::info("Received from $clientIP: " . trim($input));
 
-            // Send response
             $response = "ACK";
             socket_write($client, $response, strlen($response));
 
-            // Remove client when disconnected
-            unset($this->clients[$clientIP]);
-            Log::info("Scooter Disconnected: " . $clientIP);
+            // Update disconnection time
+            ScooterConnection::where('scooter_ip', $clientIP)
+                ->update(['disconnected_at' => now()]);
 
+            Log::info("Scooter Disconnected: " . $clientIP);
             socket_close($client);
         }
 
