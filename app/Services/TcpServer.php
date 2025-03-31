@@ -1,74 +1,37 @@
 <?php
+
 namespace App\Services;
 
-use React\Socket\Server;
-use React\EventLoop\Factory;
+use Illuminate\Support\Facades\Log;
 
 class TcpServer
 {
+    protected $host = '0.0.0.0'; // استماع لجميع الاتصالات
+    protected $port = 3000; // يمكنك تغيير البورت حسب الحاجة
+
     public function start()
     {
-        $loop = Factory::create();
-        $server = new Server('0.0.0.0:16994', $loop);
+        set_time_limit(0);
 
-        $server->on('connection', function ($connection) {
-            echo "🛴 Scooter Connected!\n";
-
-            $connection->on('data', function ($data) use ($connection) {
-                echo "📩 Received Data: " . bin2hex($data) . "\n";
-
-                // تحقق مما إذا كان الطلب فتح القفل
-                if ($data === hex2bin('01020304')) { // استبدل بالكود الصحيح من البروتوكول
-                    $unlockCommand = hex2bin('AABBCCDD'); // استبدل بالكود الصحيح لفتح القفل
-                    $connection->write($unlockCommand);
-                    echo "✅ Unlock command sent!\n";
-                }
-            });
-
-            $connection->on('close', function () {
-                echo "🔌 Scooter Disconnected!\n";
-            });
-        });
-
-        echo "🚀 TCP Server Started on port 9000...\n";
-        $loop->run();
-    }
-
-    public function sendUnlockCommand($ip, $port)
-    {
-        // إعداد البيانات المرسلة وفقًا للبروتوكول
-        $STX = "\xA3\xA4"; // رأس الإطار
-        $LEN = "\x05"; // طول البيانات
-        $RAND = random_bytes(1); // رقم عشوائي للأمان
-        $KEY = "\x34"; // مفتاح الاتصال (يجب تغييره بناءً على القفل)
-        $CMD = "\x05"; // أمر فتح القفل
-        $DATA = "\x01"; // نجاح
-        $TIMESTAMP = "\x00\x00\x00\x01"; // توقيت زمني افتراضي
-        $CRC = "\x00"; // يجب حساب CRC8 الصحيح
-
-        // دمج البيانات في سلسلة واحدة
-        $command = $STX . $LEN . $RAND . $KEY . $CMD . $DATA . $TIMESTAMP . $CRC;
-
-        // إنشاء اتصال TCP
+        // إنشاء socket
         $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-        if ($socket === false) {
-            return "❌ فشل إنشاء الاتصال: " . socket_strerror(socket_last_error());
+        socket_bind($socket, $this->host, $this->port);
+        socket_listen($socket);
+
+        Log::info("TCP Server started on {$this->host}:{$this->port}");
+
+        while (true) {
+            $client = socket_accept($socket);
+            $input = socket_read($client, 1024); // استقبال البيانات من السكوتر
+            Log::info("Received data: " . trim($input));
+
+            // إرسال رد للسكوتر إذا كان يحتاج إلى تأكيد
+            $response = "ACK"; // يمكنك تغييرها بناءً على متطلبات البروتوكول
+            socket_write($client, $response, strlen($response));
+
+            socket_close($client);
         }
 
-        // الاتصال بالقفل
-        $result = socket_connect($socket, $ip, $port);
-        if ($result === false) {
-            return "❌ فشل الاتصال بالقفل: " . socket_strerror(socket_last_error($socket));
-        }
-
-        // إرسال البيانات
-        socket_write($socket, $command, strlen($command));
-
-        // استقبال الرد من القفل
-        $response = socket_read($socket, 1024);
         socket_close($socket);
-
-        return "🔓 رد القفل: " . bin2hex($response);
     }
 }
-
