@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Services\ScooterServerService;
 use App\Services\ScooterUnlockService;
 use Illuminate\Http\Request;
 use App\Services\TcpServer;
@@ -20,16 +21,10 @@ class ScooterController extends Controller
         $this->scooterService = $scooterService;
     }
 
-    public function unlock(Request $request)
+    public function unlock($imei)
     {
-        $imei = $request->input('imei'); // استلام IMEI من المستخدم
-
-        if (!$imei) {
-            return response()->json(['error' => 'يرجى إدخال رقم IMEI'], 400);
-        }
-
-        // استدعاء الخدمة لإرسال الأمر
-        $response = $this->scooterService->unlockScooter($imei);
+        $command = "*SCOS,OM,{$imei},R0,0,20,1234," . time() . "#";
+        $response = ScooterServerService::sendCommandToScooter($imei, $command);
 
         return response()->json(['message' => $response]);
     }
@@ -96,17 +91,7 @@ class ScooterController extends Controller
     //     $this->unlockService = $unlockService;
     // }
 
-    public function unlockScooter()
-    {
-        // استبدل بعنوان IP ومنفذ القفل الفعلي
-        $ip = "138.199.198.151"; 
-        $port = 16994;
-
-        // إرسال أمر فتح القفل
-        $response = $this->unlockService->sendUnlockCommand($ip, $port);
-
-        return response()->json(['message' => $response]);
-    }
+    
 
 
 

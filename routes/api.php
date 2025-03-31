@@ -19,18 +19,15 @@ use App\Http\Controllers\API\ScooterController;
 
 // use App\Http\Controllers\ScooterController;
 
-Route::post('/unlock-scooter', [ScooterController::class, 'unlock']);
+Route::get('/unlock-scooter/{imei}', [ScooterController::class, 'unlock']);
 
 
-Route::get('/scooter/start', [ScooterController::class, 'startScooter']);
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
-// Route::post('/unlock-scooter', [ScooterController::class, 'unlock']);
 
 
 
-Route::get('/unlock', [ScooterController::class, 'unlockScooter']);
 
 
 Route::middleware('auth:sanctum')->group(function () {
