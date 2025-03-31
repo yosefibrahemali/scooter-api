@@ -19,9 +19,12 @@ class ScooterServerService
 
         echo "🚀 السيرفر يعمل على {$this->host}:{$this->port}...\n";
 
-        while ($conn = stream_socket_accept($socket)) {
-            stream_set_blocking($conn, false); // عدم حظر الاتصالات الأخرى
+        while ($conn = @stream_socket_accept($socket, 10)) { // تحديد مهلة 10 ثوانٍ
+            echo "📥 استقبلنا اتصال من السكوتر.\n";
+            stream_set_blocking($conn, false); // جعل الاتصال غير محظور
             $request = fread($conn, 1024);
+
+            echo "📥 استقبلنا طلب من السكوتر: $request\n";
 
             // استخراج IMEI من الطلب وتخزين الاتصال
             if (preg_match('/\*SCOS,OM,(\d+),/', $request, $matches)) {
