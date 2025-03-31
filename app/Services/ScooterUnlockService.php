@@ -4,7 +4,7 @@ namespace App\Services;
 
 class ScooterUnlockService
 {
-    protected $host = '138.199.198.151'; // عنوان IP للسكوتر
+    protected $host = '0.0.0.0'; // عنوان IP للسكوتر
     protected $port = 3000; // تغيير المنفذ إلى 3000
 
     public function unlockScooter($imei)
