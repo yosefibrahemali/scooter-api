@@ -15,6 +15,7 @@ class Kernel extends HttpKernel
      */
     protected $commands = [
         \App\Console\Commands\TcpScooterServer::class,
+        \App\Console\Commands\StartScooterServer::class,
     ];
     protected $middleware = [
         // \App\Http\Middleware\TrustHosts::class,
