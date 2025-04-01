@@ -1,57 +1,39 @@
 <?php
 
-namespace App\Services;
+use Workerman\Worker;
 
-use App\Models\ScooterConnection;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
+require_once __DIR__ . '/../../vendor/autoload.php';
 
-class TcpServer
-{
-    protected $host = '0.0.0.0';
-    protected $port = 3000;
+// إنشاء TCP Server يستمع على المنفذ المطلوب
+$tcp_server = new Worker("tcp://0.0.0.0:8080");
 
-    public function start()
-    {
-        set_time_limit(0);
-        $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-        socket_bind($socket, $this->host, $this->port);
-        socket_listen($socket);
+// الحد الأقصى للاتصالات المتزامنة
+$tcp_server->count = 4;
 
-        Log::info("TCP Server started on {$this->host}:{$this->port}");
+// عند اتصال جهاز جديد (السكوتر)
+$tcp_server->onConnect = function ($connection) {
+    echo "تم الاتصال بجهاز جديد: {$connection->getRemoteIp()}\n";
+};
 
-        while (true) {
-            $client = socket_accept($socket);
-            $clientIP = $this->getClientIP($client);
-
-            // Save connection to database
-            ScooterConnection::updateOrCreate(
-                ['scooter_ip' => $clientIP],
-                ['connected_at' => now(), 'disconnected_at' => null]
-            );
-
-            Log::info("Scooter Connected: " . $clientIP);
-
-            $input = socket_read($client, 1024);
-            Log::info("Received from $clientIP: " . trim($input));
-
-            $response = "ACK";
-            socket_write($client, $response, strlen($response));
-
-            // Update disconnection time
-            ScooterConnection::where('scooter_ip', $clientIP)
-                ->update(['disconnected_at' => now()]);
-
-            Log::info("Scooter Disconnected: " . $clientIP);
-            socket_close($client);
-        }
-
-        socket_close($socket);
+// استقبال البيانات من السكوتر
+$tcp_server->onMessage = function ($connection, $data) {
+    echo "تم استقبال البيانات: " . bin2hex($data) . "\n";
+    
+    // معالجة الأوامر القادمة من السكوتر
+    if (trim($data) == 'unlock') {
+        $response = "فتح القفل\n";
+    } else {
+        $response = "أمر غير معروف\n";
     }
 
-    private function getClientIP($client)
-    {
-        socket_getpeername($client, $address);
-        return $address;
-    }
-}
+    // إرسال الرد إلى السكوتر
+    $connection->send($response);
+};
+
+// عند قطع الاتصال
+$tcp_server->onClose = function ($connection) {
+    echo "تم قطع الاتصال بجهاز.\n";
+};
+
+// تشغيل السيرفر
+Worker::runAll();
