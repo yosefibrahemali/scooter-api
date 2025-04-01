@@ -4,35 +4,20 @@ use Workerman\Worker;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
 
-// إنشاء TCP Server يستمع على المنفذ المطلوب
+// إنشاء سيرفر TCP على المنفذ 3000
 $tcp_server = new Worker("tcp://0.0.0.0:3000");
 
-// الحد الأقصى للاتصالات المتزامنة
-$tcp_server->count = 4;
-
-// عند اتصال جهاز جديد (السكوتر)
+// عند اتصال جهاز جديد
 $tcp_server->onConnect = function ($connection) {
-    echo "تم الاتصال بجهاز جديد: {$connection->getRemoteIp()}\n";
+    echo "🔗 Scooter Connected: " . $connection->getRemoteIp() . "\n";
 };
 
-// استقبال البيانات من السكوتر
+// عند استقبال بيانات من السكوتر
 $tcp_server->onMessage = function ($connection, $data) {
-    echo "تم استقبال البيانات: " . bin2hex($data) . "\n";
+    echo "📩 Received from Scooter: " . $data . "\n";
     
-    // معالجة الأوامر القادمة من السكوتر
-    if (trim($data) == 'unlock') {
-        $response = "فتح القفل\n";
-    } else {
-        $response = "أمر غير معروف\n";
-    }
-
-    // إرسال الرد إلى السكوتر
-    $connection->send($response);
-};
-
-// عند قطع الاتصال
-$tcp_server->onClose = function ($connection) {
-    echo "تم قطع الاتصال بجهاز.\n";
+    // إرسال رد إلى السكوتر (اختياري)
+    $connection->send("Message received");
 };
 
 // تشغيل السيرفر

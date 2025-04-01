@@ -6,3 +6,11 @@ Stack trace:
 #2 /Users/yosef/scooter/vendor/workerman/workerman/src/Worker.php(585): Workerman\Worker::checkPortAvailable()
 #3 /Users/yosef/scooter/app/Services/TcpServer.php(39): Workerman\Worker::runAll()
 #4 {main}
+2025-04-01 05:51:16 pid:58404 Workerman[TcpServer.php] start in DEBUG mode
+2025-04-01 05:54:00 pid:58404 Workerman[TcpServer.php] received signal SIGINT
+2025-04-01 05:54:00 pid:58404 Workerman[TcpServer.php] stopping
+2025-04-01 05:54:00 pid:58404 Workerman[TcpServer.php] has been stopped
+2025-04-01 05:54:02 pid:60278 Workerman[TcpServer.php] start in DEBUG mode
+2025-04-01 05:54:04 pid:60278 Workerman[TcpServer.php] received signal SIGINT
+2025-04-01 05:54:04 pid:60278 Workerman[TcpServer.php] stopping
+2025-04-01 05:54:04 pid:60278 Workerman[TcpServer.php] has been stopped
