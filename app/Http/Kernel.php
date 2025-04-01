@@ -14,7 +14,7 @@ class Kernel extends HttpKernel
      * @var array<int, class-string|string>
      */
     protected $commands = [
-      
+        \App\Console\Commands\TcpServer::class,
     ];
     protected $middleware = [
         // \App\Http\Middleware\TrustHosts::class,
