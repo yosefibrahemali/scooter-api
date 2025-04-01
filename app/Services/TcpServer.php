@@ -11,11 +11,10 @@ class TcpServer
 
     public function start()
     {
-        $socket = stream_socket_server("tcp://{$this->host}:{$this->port}", $errno, $errstr);
+        $socket = stream_socket_server("tcp://$this->host:$this->port", $errno, $errstr);
 
         if (!$socket) {
-            Log::error("فشل إنشاء خادم TCP: $errstr ($errno)");
-            die("فشل إنشاء الخادم: $errstr ($errno)\n");
+            die("❌ فشل تشغيل السيرفر: $errstr ($errno)\n");
         }
 
         echo "🔵 خادم TCP يعمل على {$this->host}:{$this->port}...\n";
