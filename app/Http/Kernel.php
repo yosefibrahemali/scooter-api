@@ -15,6 +15,8 @@ class Kernel extends HttpKernel
      */
     protected $commands = [
         \App\Console\Commands\TcpServer::class,
+        \App\Console\Commands\StartTcpServer::class,
+
     ];
     protected $middleware = [
         // \App\Http\Middleware\TrustHosts::class,

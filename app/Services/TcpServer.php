@@ -2,47 +2,32 @@
 
 namespace App\Services;
 
-use Workerman\Worker;
-use Workerman\Connection\TcpConnection;
+use Illuminate\Support\Facades\Log;
 
-class TcpService
+class TcpServer
 {
-    private static $scooterConnections = [];
+    protected $host = "0.0.0.0"; // الاستماع على جميع عناوين IP
+    protected $port = 5000;      // رقم المنفذ
 
-    // تشغيل Workerman TCP Server
-    public static function startServer()
+    public function start()
     {
-        $tcp_server = new Worker("tcp://0.0.0.0:3000");
+        // إنشاء Socket
+        $socket = stream_socket_server("tcp://{$this->host}:{$this->port}", $errno, $errstr);
 
-        $tcp_server->onConnect = function (TcpConnection $connection) {
-            echo "🔗 Scooter Connected: " . $connection->getRemoteIp() . "\n";
-            self::$scooterConnections['default_imei'] = $connection;
-        };
-
-        $tcp_server->onMessage = function (TcpConnection $connection, $data) {
-            echo "📩 Received: " . $data . "\n";
-
-            if (preg_match('/\d{15}/', $data, $matches)) {
-                $imei = $matches[0];
-                self::$scooterConnections[$imei] = $connection;
-                echo "✅ Registered IMEI: " . $imei . "\n";
-            }
-        };
-
-        Worker::runAll();
-    }
-
-    // إرسال أمر إلى السكوتر
-    public static function sendCommand($imei, $commandType = 'R0', $value = 0)
-    {
-        if (!isset(self::$scooterConnections[$imei])) {
-            return "❌ Scooter $imei not connected!";
+        if (!$socket) {
+            Log::error("فشل إنشاء خادم TCP: $errstr ($errno)");
+            die("فشل إنشاء الخادم: $errstr ($errno)\n");
         }
 
-        $connection = self::$scooterConnections[$imei];
-        $command = "*SCOS,OM,{$imei},{$commandType},{$value},20,1234," . time() . "#\n";
-        $connection->send($command);
-        
-        return "🚀 Command sent to Scooter $imei: $command";
+        echo "🔵 خادم TCP يعمل على {$this->host}:{$this->port}...\n";
+
+        while ($conn = stream_socket_accept($socket)) {
+            $clientData = fread($conn, 1024); // قراءة بيانات العميل
+            echo "📩 استقبلنا اتصال جديد: " . trim($clientData) . "\n";
+            fwrite($conn, "✅ تم استقبال رسالتك!\n"); // الرد على العميل
+            fclose($conn);
+        }
+
+        fclose($socket);
     }
 }
