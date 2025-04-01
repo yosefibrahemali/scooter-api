@@ -1,0 +1,8 @@
+2025-04-01 05:49:38 pid:57248 Workerman[TcpServer.php] start in DEBUG mode
+2025-04-01 05:49:38 pid:57248 RuntimeException: stream_socket_server(): Unable to connect to tcp://0.0.0.0:8080 (Address already in use) in /Users/yosef/scooter/vendor/workerman/workerman/src/Worker.php:2470
+Stack trace:
+#0 [internal function]: Workerman\Worker::Workerman\{closure}(2, 'stream_socket_s...', '/Users/yosef/sc...', 2472)
+#1 /Users/yosef/scooter/vendor/workerman/workerman/src/Worker.php(2472): stream_socket_server('tcp://0.0.0.0:8...', 0, '')
+#2 /Users/yosef/scooter/vendor/workerman/workerman/src/Worker.php(585): Workerman\Worker::checkPortAvailable()
+#3 /Users/yosef/scooter/app/Services/TcpServer.php(39): Workerman\Worker::runAll()
+#4 {main}

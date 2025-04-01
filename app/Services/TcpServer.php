@@ -5,7 +5,7 @@ use Workerman\Worker;
 require_once __DIR__ . '/../../vendor/autoload.php';
 
 // إنشاء TCP Server يستمع على المنفذ المطلوب
-$tcp_server = new Worker("tcp://0.0.0.0:8080");
+$tcp_server = new Worker("tcp://0.0.0.0:3000");
 
 // الحد الأقصى للاتصالات المتزامنة
 $tcp_server->count = 4;
