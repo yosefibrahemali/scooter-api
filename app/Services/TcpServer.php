@@ -1,24 +1,48 @@
 <?php
 
+namespace App\Services;
+
 use Workerman\Worker;
+use Workerman\Connection\TcpConnection;
 
-require_once __DIR__ . '/../../vendor/autoload.php';
+class TcpService
+{
+    private static $scooterConnections = [];
 
-// إنشاء سيرفر TCP على المنفذ 3000
-$tcp_server = new Worker("tcp://0.0.0.0:3000");
+    // تشغيل Workerman TCP Server
+    public static function startServer()
+    {
+        $tcp_server = new Worker("tcp://0.0.0.0:3000");
 
-// عند اتصال جهاز جديد
-$tcp_server->onConnect = function ($connection) {
-    echo "🔗 Scooter Connected: " . $connection->getRemoteIp() . "\n";
-};
+        $tcp_server->onConnect = function (TcpConnection $connection) {
+            echo "🔗 Scooter Connected: " . $connection->getRemoteIp() . "\n";
+            self::$scooterConnections['default_imei'] = $connection;
+        };
 
-// عند استقبال بيانات من السكوتر
-$tcp_server->onMessage = function ($connection, $data) {
-    echo "📩 Received from Scooter: " . $data . "\n";
-    
-    // إرسال رد إلى السكوتر (اختياري)
-    $connection->send("Message received");
-};
+        $tcp_server->onMessage = function (TcpConnection $connection, $data) {
+            echo "📩 Received: " . $data . "\n";
 
-// تشغيل السيرفر
-Worker::runAll();
+            if (preg_match('/\d{15}/', $data, $matches)) {
+                $imei = $matches[0];
+                self::$scooterConnections[$imei] = $connection;
+                echo "✅ Registered IMEI: " . $imei . "\n";
+            }
+        };
+
+        Worker::runAll();
+    }
+
+    // إرسال أمر إلى السكوتر
+    public static function sendCommand($imei, $commandType = 'R0', $value = 0)
+    {
+        if (!isset(self::$scooterConnections[$imei])) {
+            return "❌ Scooter $imei not connected!";
+        }
+
+        $connection = self::$scooterConnections[$imei];
+        $command = "*SCOS,OM,{$imei},{$commandType},{$value},20,1234," . time() . "#\n";
+        $connection->send($command);
+        
+        return "🚀 Command sent to Scooter $imei: $command";
+    }
+}
