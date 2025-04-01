@@ -11,7 +11,6 @@ class TcpServer
 
     public function start()
     {
-        // إنشاء Socket
         $socket = stream_socket_server("tcp://{$this->host}:{$this->port}", $errno, $errstr);
 
         if (!$socket) {
@@ -21,13 +20,22 @@ class TcpServer
 
         echo "🔵 خادم TCP يعمل على {$this->host}:{$this->port}...\n";
 
-        while ($conn = stream_socket_accept($socket)) {
-            $clientData = fread($conn, 1024); // قراءة بيانات العميل
-            echo "📩 استقبلنا اتصال جديد: " . trim($clientData) . "\n";
-            fwrite($conn, "✅ تم استقبال رسالتك!\n"); // الرد على العميل
-            fclose($conn);
+        stream_set_timeout($socket, 5); // إضافة مهلة لتجنب التعليق
+
+        while (true) {
+            $conn = @stream_socket_accept($socket, 10); // انتظار 10 ثوانٍ قبل المهلة
+            
+            if ($conn) {
+                $clientData = fread($conn, 1024); 
+                echo "📩 استقبلنا اتصال جديد: " . trim($clientData) . "\n";
+                fwrite($conn, "✅ تم استقبال رسالتك!\n"); 
+                fclose($conn);
+            } else {
+                echo "⏳ لم يتم استقبال أي اتصال، الاستمرار في الاستماع...\n";
+            }
         }
 
         fclose($socket);
     }
+
 }
