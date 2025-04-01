@@ -12,7 +12,7 @@ class TcpServer extends Command
     public function handle()
     {
         $serverIp = '0.0.0.0';
-        $serverPort = 12345;
+        $serverPort = 3000;
 
         $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
         if ($socket === false) {
