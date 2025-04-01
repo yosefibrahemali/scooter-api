@@ -9,11 +9,14 @@ use App\Services\TcpService;
 
 class TestController
 {
+
     public function index()
     {
         $scooters = ScooterConnection::whereNull('disconnected_at')->get();
         return view('test', compact('scooters'));
     }
+
+    
     public function sendCommand()
     {
         $imei = "868351077123154";
