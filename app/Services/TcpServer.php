@@ -6,7 +6,7 @@ class TcpServer
 {
     protected $host = "0.0.0.0";  // Listen on all IP addresses
     protected $port = 5000;       // Port to bind to
-    protected $connections = [];  // Store active connections by IMEI
+    protected $connections = [];  // Store active connections
 
     public function start()
     {
@@ -19,9 +19,10 @@ class TcpServer
         echo "🔵 TCP Server running on {$this->host}:{$this->port}...\n";
 
         while (true) {
-            $conn = @stream_socket_accept($socket, 10); // Accept connection
+            $conn = @stream_socket_accept($socket, 10); // Accept new connections
 
             if ($conn) {
+                stream_set_blocking($conn, false); // Prevent blocking
                 $clientData = fread($conn, 1024);
                 $clientData = trim($clientData);
                 echo "📩 Received new connection: " . $clientData . "\n";
@@ -39,9 +40,9 @@ class TcpServer
                         echo "⚠️ IMEI not found in the message!\n";
                     }
                 }
-            } else {
-                echo "⏳ No connection received, waiting...\n";
             }
+            
+            usleep(500000); // Sleep for 0.5 seconds to reduce CPU usage
         }
 
         fclose($socket);
@@ -67,8 +68,3 @@ class TcpServer
         return "✅ Unlock command sent to IMEI: $imei";
     }
 }
-
-
-
-
-
