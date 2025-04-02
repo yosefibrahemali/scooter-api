@@ -4,9 +4,9 @@ namespace App\Services;
 
 class TcpServer
 {
-    protected $host = "0.0.0.0";  // Listen on all IP addresses
-    protected $port = 5000;       // Port to bind to
-    protected $connections = [];  // Store active connections
+    protected $host = "0.0.0.0";  
+    protected $port = 5000;       
+    protected $connections = [];  
 
     public function start()
     {
@@ -19,30 +19,30 @@ class TcpServer
         echo "🔵 TCP Server running on {$this->host}:{$this->port}...\n";
 
         while (true) {
-            $conn = @stream_socket_accept($socket, 10); // Accept new connections
+            $conn = @stream_socket_accept($socket, 10); 
 
             if ($conn) {
-                stream_set_blocking($conn, false); // Prevent blocking
+                stream_set_blocking($conn, false); 
                 $clientData = fread($conn, 1024);
                 $clientData = trim($clientData);
-                echo "📩 Received new connection: " . $clientData . "\n";
 
-                if (strpos($clientData, "*SCOR") !== false) {
-                    echo "✅ Scooter connected\n";
-                    
+                if (!empty($clientData)) {
+                    echo "📩 Received new connection: " . $clientData . "\n";
+
                     // Extract IMEI number dynamically
-                    preg_match('/\*SCOR,OM,(\d+),/', $clientData, $matches);
-                    if (isset($matches[1])) {
+                    if (preg_match('/\*SCOR,OM,(\d+),/', $clientData, $matches)) {
                         $imei = $matches[1];
-                        $this->connections[$imei] = $conn; // Store connection
+                        $this->connections[$imei] = $conn; 
                         echo "🔗 Connection stored for IMEI: $imei\n";
                     } else {
-                        echo "⚠️ IMEI not found in the message!\n";
+                        echo "⚠️ IMEI not found in message: $clientData\n";
                     }
+                } else {
+                    echo "⚠️ Received empty data from client\n";
                 }
             }
             
-            usleep(500000); // Sleep for 0.5 seconds to reduce CPU usage
+            usleep(500000);
         }
 
         fclose($socket);
