@@ -2,25 +2,29 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\TcpServer;
 use Illuminate\Http\Request;
+use App\Services\TcpServer;
+use Illuminate\Routing\Controller;
 
-class ScooterController 
+class ScooterController extends Controller
 {
     protected $tcpServer;
 
-    public function __construct(TcpServer $tcpServer)
+    public function __construct()
     {
-        $this->tcpServer = $tcpServer;
+        $this->tcpServer = new TcpServer();
     }
 
-    public function sendCommand($imei)
+    public function unlockScooter($imei)
     {
-        $response = $this->tcpServer->sendUnlockCommand($imei);
+       
 
-        return response()->json([
-            'message' => $response,
-        ]);
+        if (!$imei) {
+            return response()->json(['error' => 'IMEI is required'], 400);
+        }
+
+        $result = $this->tcpServer->sendUnlockCommand($imei);
+
+        return response()->json(['message' => $result]);
     }
 }
-

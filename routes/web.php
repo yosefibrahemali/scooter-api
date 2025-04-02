@@ -25,4 +25,8 @@ Route::get('/start-server', function () {
 });
 
 // Route to send unlock command to scooter
-Route::get('/unlock-scooter/{imei}', [TcpCommandController::class, 'sendUnlock']);
+// Route::get('/unlock-scooter/{imei}', [TcpCommandController::class, 'sendUnlock']);
+
+
+
+Route::get('/unlock-scooter/{imei}', [ScooterController::class, 'unlockScooter']);
