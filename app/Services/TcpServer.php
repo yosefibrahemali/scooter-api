@@ -18,26 +18,37 @@ class TcpServer
 
         echo "🔵 TCP Server running on {$this->host}:{$this->port}...\n";
 
+      
         while (true) {
             $conn = @stream_socket_accept($socket, 10);
-
+        
             if ($conn) {
+                echo "✅ Connection established!\n";
+        
                 stream_set_blocking($conn, false);
                 $clientData = fread($conn, 1024);
                 $clientData = trim($clientData);
-
+        
                 if (!empty($clientData)) {
-                    echo "📩 Received new connection: $clientData\n";
-
+                    echo "📩 Received data: $clientData\n";
+        
                     if (preg_match('/\*SCOR,OM,(\d+),/', $clientData, $matches)) {
                         $imei = $matches[1];
-                        $this->connections[$imei] = $conn; // حفظ الاتصال
-                        echo "🔗 Connection stored for IMEI: $imei\n";
+                        echo "🔗 IMEI Detected: $imei\n";
+                        $this->connections[$imei] = $conn;
+                        echo "✅ Connection stored for IMEI: $imei\n";
+                    } else {
+                        echo "⚠️ IMEI not found in message: $clientData\n";
                     }
+                } else {
+                    echo "⚠️ Received empty data from client\n";
                 }
             }
-            usleep(500000); // تأخير بسيط لتقليل استهلاك المعالج
+        
+            usleep(500000);
         }
+
+        
     }
 
     public function sendUnlockCommand($imei)
