@@ -15,20 +15,8 @@ use Illuminate\Support\Facades\Route;
 | contains the "web" middleware group. Now create something great!
 |
 */
-// Route::get('/unlock', function(){
-//     $client = new TcpClient();
-//     $client->sendUnlockCommand('868351077123154');
-
-// });
-
-// Route::get('/unlock/{imei}', [ScooterController::class, 'unlockScooter']);
-
-Route::get('unlock', function(){
-    $controller = new ScooterController();
-    $controller->unlockScooter('868351077123154');
-
-});
-// Route::get('lock/{imei}', [ScooterController::class, 'lockScooter']);
 
 
-// Route::get('/', [TestController::class, 'index']);
+Route::get('/unlock-scooter/{imei}', [ScooterController::class, 'sendUnlockCommand']);
+
+

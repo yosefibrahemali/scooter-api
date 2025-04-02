@@ -22,22 +22,19 @@ class TcpServer
 
         while (true) {
             $conn = @stream_socket_accept($socket, 10); // انتظار 10 ثوانٍ قبل المهلة
-            
+
             if ($conn) {
                 $clientData = fread($conn, 1024); 
                 $clientData = trim($clientData);
                 echo "📩 استقبلنا اتصال جديد: " . $clientData . "\n";
 
-                // تحليل البيانات القادمة من السكوتر
+                // Checking if the incoming message is *SCOR from the scooter
                 if (strpos($clientData, "*SCOR") !== false) {
                     echo "✅ استلمنا أمر من السكوتر\n";
-
-                    // Check if it's an unlock request (R0)
-                    if (strpos($clientData, "R0") !== false) {
-                        // If unlock command is detected, respond with unlock confirmation
-                        $imei = '868351077123154'; // Example IMEI from the incoming message
-                        $this->sendUnlockCommand($conn, $imei);
-                    }
+                    
+                    // Now send the R0 unlock command (to get the KEY)
+                    $imei = '868351077123154';  // Example IMEI
+                    $this->sendR0UnlockCommand($conn, $imei);
                 }
 
                 fclose($conn);
@@ -49,21 +46,36 @@ class TcpServer
         fclose($socket);
     }
 
-    public function sendUnlockCommand($conn, $imei)
+    // Send R0 command to unlock and generate the KEY
+    public function sendR0UnlockCommand($conn, $imei)
     {
-        // Prepare the unlock command (R0)
-        $key = 20;  // Example key for unlocking (you can change it as needed)
+        $key = 20;  // Example key value
         $userId = 1234;  // Example user ID
         $timestamp = time();  // Current Unix timestamp
-        
-        // Format the unlock command
+
+        // Format the R0 unlock command to get the operation KEY
         $command = "*SCOS,OM,{$imei},R0,0,{$key},{$userId},{$timestamp}#\n";
-        
-        // Send the unlock command to the scooter
+
+        // Send the unlock command to the scooter to get the operation KEY
         fwrite($conn, $command);
-        echo "🚀 تم إرسال الأمر: $command\n";
+        echo "🚀 تم إرسال الأمر R0: $command\n";
+
+        // After receiving the response (to get the key), send the L0 unlock command
+        $this->sendL0UnlockCommand($conn, $imei, $key, $userId, $timestamp);
+    }
+
+    // Send the L0 unlock command with the KEY received from the R0 command
+    public function sendL0UnlockCommand($conn, $imei, $key, $userId, $timestamp)
+    {
+        // Format the L0 unlock command
+        $command = "*SCOS,OM,{$imei},L0,{$key},{$userId},{$timestamp}#\n";
+
+        // Send the L0 unlock command to unlock the scooter
+        fwrite($conn, $command);
+        echo "🚀 تم إرسال الأمر L0: $command\n";
     }
 }
+
 
 
 
