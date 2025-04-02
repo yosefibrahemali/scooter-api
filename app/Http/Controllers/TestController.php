@@ -10,7 +10,7 @@ use App\Services\TcpService;
 class TcpClient
 {
 
-    protected $host = "127.0.0.1"; // عنوان الخادم
+    protected $host = "0.0.0.0"; // عنوان الخادم
     protected $port = 5000;       // نفس المنفذ الذي يستمع عليه السكوتر
 
     public function sendUnlockCommand($imei)
