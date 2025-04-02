@@ -2,89 +2,70 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Log;
+
+
 class TcpServer
 {
-    protected $host = "138.199.198.151";
-    protected $port = 5000;
-    protected $connections = [];
+    protected $host = "0.0.0.0";  // Listen on all IP addresses
+    protected $port = 5000;       // Port to bind to
 
+    // Start the server
     public function start()
     {
-        $socket = stream_socket_server("tcp://{$this->host}:{$this->port}", $errno, $errstr);
-    
+        // Create the server socket
+        $socket = stream_socket_server("tcp://$this->host:$this->port", $errno, $errstr);
+
         if (!$socket) {
             die("❌ Failed to start the server: $errstr ($errno)\n");
         }
-    
+
         echo "🔵 TCP Server running on {$this->host}:{$this->port}...\n";
-    
+
         while (true) {
-            $conn = @stream_socket_accept($socket, 60); // زيادة مهلة الانتظار
-        
+            // Accept a new connection
+            $conn = @stream_socket_accept($socket, 10); // 10-second timeout
+
             if ($conn) {
-                stream_set_blocking($conn, false);
-                $clientData = stream_get_contents($conn);
-                $clientData = trim($clientData);
-        
-                if (!empty($clientData)) {
-                    echo "📩 Received data: $clientData\n";
-        
-                    if (preg_match('/\*SCOR,OM,(\d+),/', $clientData, $matches)) {
-                        $imei = $matches[1];
-        
-                        $this->connections[$imei] = [
-                            'conn' => $conn,
-                            'last_active' => time()
-                        ];
-        
-                        echo "🔗 Connection stored for IMEI: $imei\n";
-                    } else {
-                        echo "⚠️ IMEI not found in message: $clientData\n";
-                    }
-                } else {
-                    echo "⚠️ Received empty data from client\n";
+                $clientData = fread($conn, 1024); // Read up to 1024 bytes
+                $clientData = trim($clientData);  // Remove extra spaces or line breaks
+                echo "📩 Received new connection: " . $clientData . "\n";
+
+                // Handle incoming message
+                if (strpos($clientData, "*SCOR") !== false) {
+                    echo "✅ Received a command from the scooter\n";
+                    $imei = '868351077123154';  // Example IMEI
+                    $this->sendUnlockCommand($conn, $imei);
                 }
+
+                fclose($conn);  // Close the connection
+            } else {
+                echo "⏳ No connection received, continuing to listen...\n";
             }
-        
-            // تنظيف الاتصالات القديمة
-            foreach ($this->connections as $imei => $info) {
-                if (time() - $info['last_active'] > 300) { // 300 ثانية (5 دقائق)
-                    unset($this->connections[$imei]);
-                    echo "❌ Connection for IMEI {$imei} removed due to inactivity\n";
-                }
-            }
-        
-            usleep(500000);
         }
-        
-    
-        fclose($socket);
+
+        fclose($socket); // Close the server socket when done
     }
 
-    
-
-    public function sendUnlockCommand($imei)
+    // Send the unlock command (e.g., L0 command)
+    public function sendUnlockCommand($conn, $imei)
     {
-        if (!isset($this->connections[$imei])) {
-            return "⚠️ No active connection found for IMEI: $imei";
-        }
+        $key = 55; // Example key value
+        $userId = 1234; // Example user ID
+        $timestamp = time(); // Get the current Unix timestamp
 
-        $conn = $this->connections[$imei]['conn'];
-
-        if (!$conn) {
-            return "⚠️ Connection resource is not valid!";
-        }
-
-        $key = 55;
-        $userId = 1234;
-        $timestamp = time();
-
+        // Construct the L0 unlock command
         $command = "*SCOS,OM,{$imei},L0,{$key},{$userId},{$timestamp}#\n";
 
+        // Send the unlock command to the scooter
         fwrite($conn, $command);
-        echo "🚀 Sent unlock command to IMEI {$imei}: $command\n";
-
-        return "✅ Unlock command sent to IMEI: $imei";
+        echo "🚀 Sent unlock command: $command\n";
     }
-
 }
+
+
+
+
+
+
+
