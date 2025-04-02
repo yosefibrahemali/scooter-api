@@ -11,28 +11,15 @@ class ScooterController
 
     public function __construct(TcpServer $tcpServer)
     {
-        $this->tcpServer = $tcpServer; // Inject TcpServer
+        $this->tcpServer = $tcpServer;
     }
 
-    // Route to start the TCP server and begin listening
-    public function startServer()
-    {
-        // Start the server in the background (you can use Laravel queues or process control to manage this in production)
-        $this->tcpServer->start();
-        
-        return response()->json(['message' => '🔵 الخادم يعمل الآن على الاستماع للاتصالات']);
-    }
-
-    // Route to send the unlock command
     public function sendCommand($imei)
     {
-      
-        // Send the unlock command (L0) to the scooter
-        $this->tcpServer->sendUnlockCommand($imei);
-        
-        // Return a response (could be a success message, etc.)
+        $response = $this->tcpServer->sendUnlockCommand($imei);
+
         return response()->json([
-            'message' => 'Unlock command sent successfully.',
+            'message' => $response,
         ]);
     }
 }

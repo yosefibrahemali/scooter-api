@@ -24,4 +24,4 @@ Route::get('/start-server', function () {
 });
 
 // Route to send unlock command to scooter
-Route::get('/send-command/{imei}', [ScooterController::class, 'sendCommand']);
+Route::get('/star-ride/{imei}', [ScooterController::class, 'sendCommand']);
