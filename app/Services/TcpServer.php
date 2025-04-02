@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Log;
 
+
 class TcpServer
 {
     protected $host = "0.0.0.0"; // الاستماع على جميع عناوين IP
@@ -28,7 +29,7 @@ class TcpServer
                 echo "📩 استقبلنا اتصال جديد: " . $clientData . "\n";
 
                 // تحليل البيانات القادمة من السكوتر
-                if (strpos($clientData, "*SCOS") !== false) {
+                if (strpos($clientData, "*SCOR") !== false) {
                     echo "✅ استلمنا أمر من السكوتر\n";
 
                     // بناء الأمر الذي سيتم إرساله
@@ -40,7 +41,11 @@ class TcpServer
 
                     // استلام الرد من السكوتر
                     $response = fread($conn, 1024);
-                    echo "📩 الرد من السكوتر: $response\n";
+                    if ($response) {
+                        echo "📩 الرد من السكوتر: $response\n";
+                    } else {
+                        echo "❌ لم نتلقَ ردًا من السكوتر\n";
+                    }
                 }
 
                 fclose($conn);
@@ -95,3 +100,5 @@ class TcpServer
         return $command;
     }
 }
+
+
