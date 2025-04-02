@@ -19,28 +19,44 @@ class TcpServer
         echo "🔵 TCP Server running on {$this->host}:{$this->port}...\n";
     
         while (true) {
-            echo "⏳ Waiting for a new connection...\n"; // طباعة عند انتظار اتصال جديد
-            
-            $conn = @stream_socket_accept($socket, 10);
-    
+            $conn = @stream_socket_accept($socket, 60); // زيادة مهلة الانتظار
+        
             if ($conn) {
-                echo "✅ Connection established!\n";
-                stream_set_blocking($conn, true); // تغيير من false إلى true
-                sleep(2); // إبقاء الاتصال مفتوحًا مؤقتًا
-                
-                $clientData = fread($conn, 1024);
+                stream_set_blocking($conn, false);
+                $clientData = stream_get_contents($conn);
                 $clientData = trim($clientData);
-                
+        
                 if (!empty($clientData)) {
                     echo "📩 Received data: $clientData\n";
+        
+                    if (preg_match('/\*SCOR,OM,(\d+),/', $clientData, $matches)) {
+                        $imei = $matches[1];
+        
+                        $this->connections[$imei] = [
+                            'conn' => $conn,
+                            'last_active' => time()
+                        ];
+        
+                        echo "🔗 Connection stored for IMEI: $imei\n";
+                    } else {
+                        echo "⚠️ IMEI not found in message: $clientData\n";
+                    }
                 } else {
                     echo "⚠️ Received empty data from client\n";
                 }
             }
-            
-    
+        
+            // تنظيف الاتصالات القديمة
+            foreach ($this->connections as $imei => $info) {
+                if (time() - $info['last_active'] > 300) { // 300 ثانية (5 دقائق)
+                    unset($this->connections[$imei]);
+                    echo "❌ Connection for IMEI {$imei} removed due to inactivity\n";
+                }
+            }
+        
             usleep(500000);
         }
+        
     
         fclose($socket);
     }
@@ -53,7 +69,11 @@ class TcpServer
             return "⚠️ No active connection found for IMEI: $imei";
         }
 
-        $conn = $this->connections[$imei];
+        $conn = $this->connections[$imei]['conn'];
+
+        if (!$conn) {
+            return "⚠️ Connection resource is not valid!";
+        }
 
         $key = 55;
         $userId = 1234;
@@ -66,4 +86,5 @@ class TcpServer
 
         return "✅ Unlock command sent to IMEI: $imei";
     }
+
 }
