@@ -7,27 +7,45 @@ use Illuminate\Support\Facades\Log;
 use App\Services\TcpServer;
 
 
+
 class ScooterController 
 {
     public function unlockScooter($imei)
     {
-        $tcpServer = new TcpServer();
-        $command = $tcpServer->unlockCommand($imei);  // Send unlock command
-        return response()->json([
-            'message' => '✅ تم إرسال أمر الفتح بنجاح!',
-            'command' => $command,
-            'response' => 'Your response from the scooter here' // Add actual response here if needed
-        ]);
+        // Prepare unlock command with R0 for unlocking
+        $key = 20;  // Example key, adjust as necessary
+        $userId = 1234;  // Example user ID
+        $timestamp = time();  // Current Unix timestamp
+        
+        // The unlock command format
+        $command = "*SCOS,OM,{$imei},R0,0,{$key},{$userId},{$timestamp}#\n";
+        
+        // Send the command to the server (TCP server connection)
+        $this->sendCommandToServer($command);
     }
 
-    public function lockScooter($imei)
+    public function sendCommandToServer($command)
     {
-        $tcpServer = new TcpServer();
-        $command = $tcpServer->lockCommand($imei);  // Send lock command
-        return response()->json([
-            'message' => '✅ تم إرسال أمر القفل بنجاح!',
-            'command' => $command,
-            'response' => 'Your response from the scooter here' // Add actual response here if needed
-        ]);
+        // Open connection to the TCP server
+        $host = "0.0.0.0";
+        $port = 5000;
+
+        $socket = stream_socket_client("tcp://$host:$port", $errno, $errstr);
+
+        if (!$socket) {
+            echo "❌ فشل الاتصال بالخادم: $errstr ($errno)\n";
+            return;
+        }
+
+        // Send the command to the scooter
+        fwrite($socket, $command);
+        echo "🚀 تم إرسال الأمر: $command\n";
+
+        // Read the response from the scooter
+        $response = fread($socket, 1024);
+        echo "📩 الرد من السكوتر: $response\n";
+
+        fclose($socket);
     }
-}    
+}
+

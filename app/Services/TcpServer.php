@@ -5,7 +5,6 @@ namespace App\Services;
 use Illuminate\Support\Facades\Log;
 
 
-
 class TcpServer
 {
     protected $host = "0.0.0.0"; // الاستماع على جميع عناوين IP
@@ -33,19 +32,11 @@ class TcpServer
                 if (strpos($clientData, "*SCOR") !== false) {
                     echo "✅ استلمنا أمر من السكوتر\n";
 
-                    // بناء الأمر الذي سيتم إرساله
-                    $command = $this->sendCommand($clientData);
-                    
-                    // إرسال الأمر إلى السكوتر
-                    fwrite($conn, $command);
-                    echo "🚀 تم إرسال الأمر: $command\n";
-
-                    // استلام الرد من السكوتر
-                    $response = fread($conn, 1024);
-                    if ($response) {
-                        echo "📩 الرد من السكوتر: $response\n";
-                    } else {
-                        echo "❌ لم نتلقَ ردًا من السكوتر\n";
+                    // Check if it's an unlock request (R0)
+                    if (strpos($clientData, "R0") !== false) {
+                        // If unlock command is detected, respond with unlock confirmation
+                        $imei = '868351077123154'; // Example IMEI from the incoming message
+                        $this->sendUnlockCommand($conn, $imei);
                     }
                 }
 
@@ -58,49 +49,22 @@ class TcpServer
         fclose($socket);
     }
 
-    public function sendCommand($clientData)
+    public function sendUnlockCommand($conn, $imei)
     {
-        // افترضنا أن البيانات تأتي مع الأمر من السكوتر
-        // هذا هو المكان الذي يمكنك فيه تخصيص الأوامر بناءً على نوع البيانات المستلمة
-
-        // مثال: استخراج IMEI أو نوع الأمر من البيانات القادمة
-        preg_match('/\*SCOS,OM,(\d+),/', $clientData, $matches);
-        $imei = $matches[1] ?? '868351077123154';  // استخدم IMEI من البيانات أو قيمة افتراضية
-
-        // حدد نوع الأمر المطلوب إرساله
-        if (strpos($clientData, "R0") !== false) {
-            // مثال: أمر فتح القفل (Unlock)
-            return $this->unlockCommand($imei);
-        } else {
-            // أمر آخر مثل قفل الدراجة (Lock)
-            return $this->lockCommand($imei);
-        }
-    }
-
-    public function unlockCommand($imei)
-    {
-        // هنا يمكنك تخصيص الأمر لفتح القفل
-        $timestamp = time();  // الوقت الحالي بالثواني
-        $key = 20;  // مفتاح عشوائي للإلغاء
-        $userId = 1234;  // معرف المستخدم
-
-        // بناء الأمر للإرسال
+        // Prepare the unlock command (R0)
+        $key = 20;  // Example key for unlocking (you can change it as needed)
+        $userId = 1234;  // Example user ID
+        $timestamp = time();  // Current Unix timestamp
+        
+        // Format the unlock command
         $command = "*SCOS,OM,{$imei},R0,0,{$key},{$userId},{$timestamp}#\n";
-        return $command;
-    }
-
-    public function lockCommand($imei)
-    {
-        // هنا يمكنك تخصيص الأمر لقفل الدراجة
-        $timestamp = time();  // الوقت الحالي بالثواني
-        $key = 30;  // مفتاح عشوائي للقفل
-        $userId = 1234;  // معرف المستخدم
-
-        // بناء الأمر للإرسال
-        $command = "*SCOS,OM,{$imei},R1,0,{$key},{$userId},{$timestamp}#\n";
-        return $command;
+        
+        // Send the unlock command to the scooter
+        fwrite($conn, $command);
+        echo "🚀 تم إرسال الأمر: $command\n";
     }
 }
+
 
 
 

@@ -23,8 +23,12 @@ use Illuminate\Support\Facades\Route;
 
 // Route::get('/unlock/{imei}', [ScooterController::class, 'unlockScooter']);
 
-Route::get('unlock/{imei}', [ScooterController::class, 'unlockScooter']);
-Route::get('lock/{imei}', [ScooterController::class, 'lockScooter']);
+Route::get('unlock', function(){
+    $controller = new ScooterController();
+    $controller->unlockScooter('868351077123154');
+
+});
+// Route::get('lock/{imei}', [ScooterController::class, 'lockScooter']);
 
 
 // Route::get('/', [TestController::class, 'index']);
