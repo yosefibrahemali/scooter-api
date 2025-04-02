@@ -10,21 +10,14 @@ class ScooterController extends Controller
 {
     protected $tcpServer;
 
-    public function __construct()
+    public function __construct(TcpServer $tcpServer)
     {
-        $this->tcpServer = new TcpServer();
+        $this->tcpServer = $tcpServer;
     }
 
     public function unlockScooter($imei)
     {
-       
-
-        if (!$imei) {
-            return response()->json(['error' => 'IMEI is required'], 400);
-        }
-
-        $result = $this->tcpServer->sendUnlockCommand($imei);
-
-        return response()->json(['message' => $result]);
+        $response = $this->tcpServer->sendUnlockCommand($imei);
+        return response()->json(['message' => $response]);
     }
 }

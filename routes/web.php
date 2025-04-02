@@ -29,4 +29,6 @@ Route::get('/start-server', function () {
 
 
 
-Route::get('/unlock-scooter/{imei}', [ScooterController::class, 'unlockScooter']);
+// Route::get('/unlock-scooter/{imei}', [ScooterController::class, 'unlockScooter']);
+
+Route::get('/unlock/{imei}', [ScooterController::class, 'unlockScooter']);
