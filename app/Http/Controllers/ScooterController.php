@@ -24,9 +24,9 @@ class ScooterController
     }
 
     // Route to send the unlock command
-    public function sendUnlockCommand(Request $request)
+    public function sendUnlockCommand($imei)
     {
-        $imei = $request->input('imei'); // Get IMEI from request
+        // $imei = $request->input('imei'); // Get IMEI from request
 
         // Send unlock command when this function is explicitly called
         $this->tcpServer->sendUnlockCommand($imei);

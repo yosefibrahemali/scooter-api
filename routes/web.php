@@ -20,4 +20,4 @@ use Illuminate\Support\Facades\Route;
 Route::get('/start-server', [ScooterController::class, 'startServer']);
 
 // Send unlock command
-Route::post('/send-unlock', [ScooterController::class, 'sendUnlockCommand']);
+Route::get('/send-unlock/{imei}', [ScooterController::class, 'sendUnlockCommand']);
