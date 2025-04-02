@@ -18,7 +18,7 @@ class ScooterController
         $timestamp = time();  // Current Unix timestamp
         
         // The unlock command format
-        $command = "*SCOS,OM,{$imei},R0,0,{$key},{$userId},{$timestamp}#\n";
+        $command = "*SCOS,OM,{$imei},R1,0,{$key},{$userId},{$timestamp}#\n";
         
         // Send the command to the server (TCP server connection)
         $this->sendCommandToServer($command);
