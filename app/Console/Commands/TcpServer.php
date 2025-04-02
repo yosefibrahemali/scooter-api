@@ -7,12 +7,12 @@ use App\Services\TcpServerService;
 
 class TcpServerCommand extends Command
 {
-    protected $signature = 'tcp:server {port?}';
+    protected $signature = 'tcp:server';
     protected $description = 'Start TCP server for scooter communication';
 
     public function handle()
     {
-        $port = $this->argument('port') ?? 8080;
+        $port = 5000;
         
         $server = new TcpServerService();
         $server->start($port);
