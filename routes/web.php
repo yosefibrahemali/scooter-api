@@ -17,6 +17,8 @@ use Illuminate\Support\Facades\Route;
 */
 
 
-Route::get('/unlock-scooter/{imei}', [ScooterController::class, 'sendUnlockCommand']);
+Route::get('/connect-scooter/{imei}', [ScooterController::class, 'connectToScooter']);
 
+// Route to send the unlock command
+Route::get('/unlock-scooter/{imei}', [ScooterController::class, 'sendUnlockCommand']);
 
