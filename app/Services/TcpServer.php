@@ -2,57 +2,58 @@
 
 namespace App\Services;
 
-use Ratchet\MessageComponentInterface;
-use Ratchet\ConnectionInterface;
+use Illuminate\Support\Facades\Redis;
 
-class TcpServer implements MessageComponentInterface
+class TcpServer
 {
-    protected $connections = [];
+    protected $host = "0.0.0.0";
+    protected $port = 5000;
 
-    public function onOpen(ConnectionInterface $conn)
+    public function start()
     {
-        echo "✅ New connection: {$conn->resourceId}\n";
-        $this->connections[$conn->resourceId] = $conn;
-    }
-
-    public function onMessage(ConnectionInterface $conn, $msg)
-    {
-        echo "📩 Received data: $msg\n";
-
-        if (preg_match('/\*SCOR,OM,(\d+),/', $msg, $matches)) {
-            $imei = $matches[1];
-            echo "🔗 IMEI Detected: $imei\n";
-            $this->connections[$imei] = $conn;
-            echo "✅ Connection stored for IMEI: $imei\n";
+        $socket = stream_socket_server("tcp://{$this->host}:{$this->port}", $errno, $errstr);
+        if (!$socket) {
+            die("❌ Failed to start the server: $errstr ($errno)\n");
         }
 
-        // رد تلقائي (اختياري)
-        $conn->send("✅ Server received your message!");
-    }
+        echo "🔵 TCP Server running on {$this->host}:{$this->port}...\n";
 
-    public function onClose(ConnectionInterface $conn)
-    {
-        echo "❌ Connection closed: {$conn->resourceId}\n";
-        unset($this->connections[$conn->resourceId]);
-    }
+        while (true) {
+            $conn = @stream_socket_accept($socket, 10);
+            if ($conn) {
+                stream_set_blocking($conn, false);
+                $clientData = fread($conn, 1024);
+                $clientData = trim($clientData);
 
-    public function onError(ConnectionInterface $conn, \Exception $e)
-    {
-        echo "⚠️ Error: {$e->getMessage()}\n";
-        $conn->close();
+                if (!empty($clientData)) {
+                    echo "📩 Received data: $clientData\n";
+
+                    if (preg_match('/\*SCOR,OM,(\d+),/', $clientData, $matches)) {
+                        $imei = $matches[1];
+                        Redis::set("scooter:$imei", serialize($conn));  // تخزين الاتصال في Redis
+                        echo "🔗 Connection stored for IMEI: $imei\n";
+                    }
+                }
+            }
+
+            usleep(500000);
+        }
+
+        fclose($socket);
     }
 
     public function sendUnlockCommand($imei)
     {
-        if (!isset($this->connections[$imei])) {
+        $conn = unserialize(Redis::get("scooter:$imei"));
+
+        if (!$conn) {
             return "⚠️ No active connection found for IMEI: $imei";
         }
 
-        $conn = $this->connections[$imei];
         $command = "*SCOS,OM,{$imei},L0,55,1234," . time() . "#\n";
-        $conn->send($command);
+        fwrite($conn, $command);
+        echo "🚀 Sent unlock command to IMEI: $imei\n";
 
-        echo "🚀 Sent unlock command to IMEI {$imei}: $command\n";
         return "✅ Unlock command sent to IMEI: $imei";
     }
 }
