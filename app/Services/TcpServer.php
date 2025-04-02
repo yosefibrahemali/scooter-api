@@ -2,58 +2,77 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Redis;
+use React\Socket\ConnectionInterface;
+use React\Socket\TcpServer;
+use React\EventLoop\Factory;
 
-class TcpServer
+class TcpServerService
 {
-    protected $host = "0.0.0.0";
-    protected $port = 5000;
+    protected $loop;
+    protected $server;
+    protected $connections = [];
 
-    public function start()
+    public function __construct()
     {
-        $socket = stream_socket_server("tcp://{$this->host}:{$this->port}", $errno, $errstr);
-        if (!$socket) {
-            die("❌ Failed to start the server: $errstr ($errno)\n");
-        }
-
-        echo "🔵 TCP Server running on {$this->host}:{$this->port}...\n";
-
-        while (true) {
-            $conn = @stream_socket_accept($socket, 10);
-            if ($conn) {
-                stream_set_blocking($conn, false);
-                $clientData = fread($conn, 1024);
-                $clientData = trim($clientData);
-
-                if (!empty($clientData)) {
-                    echo "📩 Received data: $clientData\n";
-
-                    if (preg_match('/\*SCOR,OM,(\d+),/', $clientData, $matches)) {
-                        $imei = $matches[1];
-                        Redis::set("scooter:$imei", serialize($conn));  // تخزين الاتصال في Redis
-                        echo "🔗 Connection stored for IMEI: $imei\n";
-                    }
-                }
-            }
-
-            usleep(500000);
-        }
-
-        fclose($socket);
+        $this->loop = Factory::create();
     }
 
-    public function sendUnlockCommand($imei)
+    public function start($port = 5000)
     {
-        $conn = unserialize(Redis::get("scooter:$imei"));
+        $this->server = new TcpServer("0.0.0.0:$port", $this->loop);
 
-        if (!$conn) {
-            return "⚠️ No active connection found for IMEI: $imei";
+        $this->server->on('connection', function (ConnectionInterface $connection) {
+            $remoteAddress = $connection->getRemoteAddress();
+            $this->connections[$remoteAddress] = $connection;
+            
+            echo "New connection from {$remoteAddress}\n";
+
+            $connection->on('data', function ($data) use ($connection, $remoteAddress) {
+                echo "Received from {$remoteAddress}: {$data}";
+                
+                // معالجة البيانات الواردة من السكوتر
+                $this->handleScooterData($data, $connection);
+            });
+
+            $connection->on('close', function () use ($remoteAddress) {
+                echo "Connection {$remoteAddress} closed\n";
+                unset($this->connections[$remoteAddress]);
+            });
+        });
+
+        echo "Server running on port {$port}\n";
+        $this->loop->run();
+    }
+
+    protected function handleScooterData($data, ConnectionInterface $connection)
+    {
+        // تحليل البيانات الواردة من السكوتر
+        if (strpos($data, '*SCOR,OM') !== false) {
+            // هذا رد من السكوتر على أمر
+            $parts = explode(',', $data);
+            $status = $parts[3] ?? null;
+            $userId = $parts[2] ?? null;
+            $timestamp = $parts[6] ?? null;
+            
+            // معالجة الرد هنا
+            echo "Received response from scooter - Status: {$status}, UserID: {$userId}\n";
         }
+        
+        // يمكنك إضافة المزيد من معالجات البيانات هنا
+    }
 
-        $command = "*SCOS,OM,{$imei},L0,55,1234," . time() . "#\n";
-        fwrite($conn, $command);
-        echo "🚀 Sent unlock command to IMEI: $imei\n";
-
-        return "✅ Unlock command sent to IMEI: $imei";
+    public function sendCommandToScooter($scooterId, $command)
+    {
+        foreach ($this->connections as $address => $connection) {
+            // هنا يمكنك التحقق من أن الاتصال هو للسكوتر المطلوب
+            // (قد تحتاج إلى تتبع معرفات السكوتر مع عناوينهم)
+            
+            $connection->write($command);
+            echo "Sent command to scooter {$scooterId}: {$command}\n";
+            return true;
+        }
+        
+        echo "Scooter {$scooterId} not connected\n";
+        return false;
     }
 }

@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ScooterController;
 use App\Http\Controllers\TcpCommandController;
 
 /*
@@ -21,8 +22,10 @@ use App\Http\Controllers\TcpCommandController;
 
 
 
+Route::post('/scooter/unlock', [ScooterController::class, 'unlock']);
 
-Route::post('/unlock-scooter', [TcpCommandController::class, 'sendUnlock']);
+
+// Route::post('/unlock-scooter', [TcpCommandController::class, 'sendUnlock']);
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);

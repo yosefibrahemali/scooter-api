@@ -34,10 +34,3 @@ Route::get('/start-server', function () {
 
 use App\Services\TcpServer;
 use Illuminate\Support\Facades\Redis;
-
-Route::get('/unlock/{imei}', function ($imei) {
-    $server = new TcpServer();
-    return response()->json([
-        'message' => $server->sendUnlockCommand($imei)
-    ]);
-});

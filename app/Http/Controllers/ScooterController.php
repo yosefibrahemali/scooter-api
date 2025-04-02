@@ -2,22 +2,33 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\TcpServerService;
 use Illuminate\Http\Request;
-use App\Services\TcpServer;
 use Illuminate\Routing\Controller;
 
 class ScooterController extends Controller
 {
     protected $tcpServer;
 
-    public function __construct(TcpServer $tcpServer)
+    public function __construct(TcpServerService $tcpServer)
     {
         $this->tcpServer = $tcpServer;
     }
 
-    public function unlockScooter($imei)
+    public function unlock(Request $request)
     {
-        $response = $this->tcpServer->sendUnlockCommand($imei);
-        return response()->json(['message' => $response]);
+        $scooterId = $request->input('scooter_id');
+        $userId = $request->input('user_id');
+        $timestamp = time();
+        
+        // بناء الأمر وفقاً للبروتوكول المطلوب
+        $command = "*SCOS,OM,{$scooterId},L0,55,{$userId},{$timestamp}#\n";
+        
+        $result = $this->tcpServer->sendCommandToScooter($scooterId, $command);
+        
+        return response()->json([
+            'success' => $result,
+            'command' => $command
+        ]);
     }
 }
