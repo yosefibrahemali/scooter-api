@@ -7,80 +7,59 @@ use Illuminate\Support\Facades\Log;
 
 class TcpServer
 {
-    protected $host = "0.0.0.0"; // الاستماع على جميع عناوين IP
-    protected $port = 5000;      // رقم المنفذ
-    protected $conn = null;      // Store the connection
+    protected $host = "0.0.0.0";  // Listen on all IP addresses
+    protected $port = 5000;       // Port to bind to
 
+    // Start the server
     public function start()
     {
+        // Create the server socket
         $socket = stream_socket_server("tcp://$this->host:$this->port", $errno, $errstr);
 
         if (!$socket) {
-            die("❌ فشل تشغيل السيرفر: $errstr ($errno)\n");
+            die("❌ Failed to start the server: $errstr ($errno)\n");
         }
 
-        echo "🔵 خادم TCP يعمل على {$this->host}:{$this->port}...\n";
+        echo "🔵 TCP Server running on {$this->host}:{$this->port}...\n";
 
         while (true) {
-            $this->conn = @stream_socket_accept($socket, 10); // انتظار 10 ثوانٍ قبل المهلة
+            // Accept a new connection
+            $conn = @stream_socket_accept($socket, 10); // 10-second timeout
 
-            if ($this->conn) {
-                $clientData = fread($this->conn, 1024);
-                $clientData = trim($clientData);
-                echo "📩 استقبلنا اتصال جديد: " . $clientData . "\n";
+            if ($conn) {
+                $clientData = fread($conn, 1024); // Read up to 1024 bytes
+                $clientData = trim($clientData);  // Remove extra spaces or line breaks
+                echo "📩 Received new connection: " . $clientData . "\n";
 
-                // Here we just listen to the incoming data, but we don't send the command automatically
+                // Handle incoming message
                 if (strpos($clientData, "*SCOR") !== false) {
-                    echo "✅ استلمنا أمر من السكوتر\n";
+                    echo "✅ Received a command from the scooter\n";
+                    $imei = '868351077123154';  // Example IMEI
+                    $this->sendUnlockCommand($conn, $imei);
                 }
 
-                fclose($this->conn);
+                fclose($conn);  // Close the connection
             } else {
-                echo "⏳ لم يتم استقبال أي اتصال، الاستمرار في الاستماع...\n";
+                echo "⏳ No connection received, continuing to listen...\n";
             }
         }
 
-        fclose($socket);
+        fclose($socket); // Close the server socket when done
     }
 
-    // This method will now be called explicitly by the controller to send the unlock command
-    public function sendUnlockCommand($imei)
+    // Send the unlock command (e.g., L0 command)
+    public function sendUnlockCommand($conn, $imei)
     {
-        if ($this->conn) {
-            $key = 20;  // Example key value
-            $userId = 1234;  // Example user ID
-            $timestamp = time();  // Current Unix timestamp
+        $key = 55; // Example key value
+        $userId = 1234; // Example user ID
+        $timestamp = time(); // Get the current Unix timestamp
 
-            // Send the R0 command to get the KEY
-            $this->sendR0UnlockCommand($imei, $key, $userId, $timestamp);
-        } else {
-            echo "❌ لا يوجد اتصال حاليًا.\n";
-        }
-    }
-
-    // Send the R0 command to unlock and generate the KEY
-    private function sendR0UnlockCommand($imei, $key, $userId, $timestamp)
-    {
-        // Format the R0 unlock command
-        $command = "*SCOS,OM,{$imei},R0,0,{$key},{$userId},{$timestamp}#\n";
-
-        // Send the unlock command to the scooter to get the operation KEY
-        fwrite($this->conn, $command);
-        echo "🚀 تم إرسال الأمر R0: $command\n";
-
-        // Now send the L0 unlock command with the KEY
-        $this->sendL0UnlockCommand($imei, $key, $userId, $timestamp);
-    }
-
-    // Send the L0 unlock command
-    private function sendL0UnlockCommand($imei, $key, $userId, $timestamp)
-    {
-        // Format the L0 unlock command
+        // Construct the L0 unlock command
         $command = "*SCOS,OM,{$imei},L0,{$key},{$userId},{$timestamp}#\n";
 
-        // Send the L0 unlock command to unlock the scooter
-        fwrite($this->conn, $command);
-        echo "🚀 تم إرسال الأمر L0: $command\n";
+        // Send the unlock command to the scooter
+        fwrite($conn, $command);
+        echo "🚀 Sent unlock command: $command\n";
     }
 }
 

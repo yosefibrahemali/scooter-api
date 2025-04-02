@@ -9,9 +9,9 @@ class ScooterController
 {
     protected $tcpServer;
 
-    public function __construct()
+    public function __construct(TcpServer $tcpServer)
     {
-        $this->tcpServer = new TcpServer();
+        $this->tcpServer = $tcpServer; // Inject TcpServer
     }
 
     // Route to start the TCP server and begin listening
@@ -24,14 +24,16 @@ class ScooterController
     }
 
     // Route to send the unlock command
-    public function sendUnlockCommand($imei)
+    public function sendCommand($imei)
     {
-        // $imei = $request->input('imei'); // Get IMEI from request
-
-        // Send unlock command when this function is explicitly called
+      
+        // Send the unlock command (L0) to the scooter
         $this->tcpServer->sendUnlockCommand($imei);
         
-        return response()->json(['message' => '✅ تم إرسال أمر الفتح بنجاح!']);
+        // Return a response (could be a success message, etc.)
+        return response()->json([
+            'message' => 'Unlock command sent successfully.',
+        ]);
     }
 }
 

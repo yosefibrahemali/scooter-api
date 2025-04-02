@@ -3,6 +3,7 @@
 use App\Http\Controllers\ScooterController;
 use App\Http\Controllers\TcpClient;
 use App\Http\Controllers\TestController;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -17,7 +18,10 @@ use Illuminate\Support\Facades\Route;
 */
 
 
-Route::get('/start-server', [ScooterController::class, 'startServer']);
+Route::get('/start-server', function () {
+    Artisan::call('tcp:server');
+    return "🚀 TCP Server Started!";
+});
 
-// Send unlock command
-Route::get('/send-unlock/{imei}', [ScooterController::class, 'sendUnlockCommand']);
+// Route to send unlock command to scooter
+Route::post('/send-command', [ScooterController::class, 'sendCommand']);
