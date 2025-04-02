@@ -44,35 +44,34 @@ class TcpServerService
         $this->loop->run();
     }
 
+
+
+   
+    
+    
     protected function handleScooterData($data, ConnectionInterface $connection)
     {
-        // تحليل البيانات الواردة من السكوتر
-        if (strpos($data, '*SCOR,OM') !== false) {
-            // هذا رد من السكوتر على أمر
-            $parts = explode(',', $data);
-            $status = $parts[3] ?? null;
-            $userId = $parts[2] ?? null;
-            $timestamp = $parts[6] ?? null;
+        if (preg_match('/\*SCOR,OM,(\d+),/', $data, $matches)) {
+            $scooterId = $matches[1];
+            $this->connections[$scooterId] = $connection;
             
-            // معالجة الرد هنا
-            echo "Received response from scooter - Status: {$status}, UserID: {$userId}\n";
+            // ... باقي معالجة البيانات ...
         }
-        
-        // يمكنك إضافة المزيد من معالجات البيانات هنا
     }
 
     public function sendCommandToScooter($scooterId, $command)
     {
-        foreach ($this->connections as $address => $connection) {
-            // هنا يمكنك التحقق من أن الاتصال هو للسكوتر المطلوب
-            // (قد تحتاج إلى تتبع معرفات السكوتر مع عناوينهم)
-            
-            $connection->write($command);
-            echo "Sent command to scooter {$scooterId}: {$command}\n";
+        if (isset($this->connections[$scooterId])) {
+            $this->connections[$scooterId]->write($command);
+            echo "Command sent to scooter {$scooterId}: {$command}";
             return true;
         }
         
         echo "Scooter {$scooterId} not connected\n";
         return false;
     }
+
+
+
+
 }

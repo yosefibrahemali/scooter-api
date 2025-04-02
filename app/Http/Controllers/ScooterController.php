@@ -21,14 +21,27 @@ class ScooterController extends Controller
         $userId = $request->input('user_id');
         $timestamp = time();
         
-        // بناء الأمر وفقاً للبروتوكول المطلوب
         $command = "*SCOS,OM,{$scooterId},L0,55,{$userId},{$timestamp}#\n";
         
-        $result = $this->tcpServer->sendCommandToScooter($scooterId, $command);
+        // محاولة الإرسال 3 مرات مع تأخير بينها
+        $attempts = 0;
+        while ($attempts < 3) {
+            if ($this->tcpServer->sendCommandToScooter($scooterId, $command)) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Command sent successfully',
+                    'command' => $command
+                ]);
+            }
+            sleep(1);
+            $attempts++;
+        }
         
         return response()->json([
-            'success' => $result,
+            'success' => false,
+            'message' => 'Scooter not connected after 3 attempts',
             'command' => $command
-        ]);
+        ], 408);
     }
+    
 }
