@@ -2,18 +2,14 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Log;
-
-
 class TcpServer
 {
     protected $host = "0.0.0.0";  // Listen on all IP addresses
     protected $port = 5000;       // Port to bind to
+    protected $connections = [];  // Store active connections by IMEI
 
-    // Start the server
     public function start()
     {
-        // Create the server socket
         $socket = stream_socket_server("tcp://$this->host:$this->port", $errno, $errstr);
 
         if (!$socket) {
@@ -23,47 +19,54 @@ class TcpServer
         echo "🔵 TCP Server running on {$this->host}:{$this->port}...\n";
 
         while (true) {
-            // Accept a new connection
-            $conn = @stream_socket_accept($socket, 10); // 10-second timeout
+            $conn = @stream_socket_accept($socket, 10); // Accept connection
 
             if ($conn) {
-                $clientData = fread($conn, 1024); // Read up to 1024 bytes
-                $clientData = trim($clientData);  // Remove extra spaces or line breaks
+                $clientData = fread($conn, 1024);
+                $clientData = trim($clientData);
                 echo "📩 Received new connection: " . $clientData . "\n";
 
-                // Handle incoming message
                 if (strpos($clientData, "*SCOR") !== false) {
-                    echo "✅ Received a command from the scooter\n";
-                    $imei = '868351077123154';  // Example IMEI
-                    $this->sendUnlockCommand($conn, $imei);
+                    echo "✅ Scooter connected\n";
+                    
+                    // Extract IMEI number dynamically
+                    preg_match('/\*SCOR,OM,(\d+),/', $clientData, $matches);
+                    if (isset($matches[1])) {
+                        $imei = $matches[1];
+                        $this->connections[$imei] = $conn; // Store connection
+                        echo "🔗 Connection stored for IMEI: $imei\n";
+                    } else {
+                        echo "⚠️ IMEI not found in the message!\n";
+                    }
                 }
-
-                fclose($conn);  // Close the connection
             } else {
-                echo "⏳ No connection received, continuing to listen...\n";
+                echo "⏳ No connection received, waiting...\n";
             }
         }
 
-        fclose($socket); // Close the server socket when done
+        fclose($socket);
     }
 
-    // Send the unlock command (e.g., L0 command)
-    public function sendUnlockCommand($conn, $imei)
+    public function sendUnlockCommand($imei)
     {
-        $key = 55; // Example key value
-        $userId = 1234; // Example user ID
-        $timestamp = time(); // Get the current Unix timestamp
+        if (!isset($this->connections[$imei])) {
+            return "⚠️ No active connection found for IMEI: $imei";
+        }
 
-        // Construct the L0 unlock command
+        $conn = $this->connections[$imei];
+
+        $key = 55;
+        $userId = 1234;
+        $timestamp = time();
+
         $command = "*SCOS,OM,{$imei},L0,{$key},{$userId},{$timestamp}#\n";
 
-        // Send the unlock command to the scooter
         fwrite($conn, $command);
-        echo "🚀 Sent unlock command: $command\n";
+        echo "🚀 Sent unlock command to IMEI {$imei}: $command\n";
+
+        return "✅ Unlock command sent to IMEI: $imei";
     }
 }
-
-
 
 
 

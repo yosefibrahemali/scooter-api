@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ScooterController;
 use App\Http\Controllers\TcpClient;
+use App\Http\Controllers\TcpCommandController;
 use App\Http\Controllers\TestController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
@@ -24,4 +25,4 @@ Route::get('/start-server', function () {
 });
 
 // Route to send unlock command to scooter
-Route::get('/star-ride/{imei}', [ScooterController::class, 'sendCommand']);
+Route::get('/unlock-scooter/{imei}', [TcpCommandController::class, 'sendUnlock']);
