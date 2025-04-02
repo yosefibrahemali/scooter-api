@@ -19,15 +19,24 @@ class TcpServer
 
         echo "🔵 خادم TCP يعمل على {$this->host}:{$this->port}...\n";
 
-        stream_set_timeout($socket, 5); // إضافة مهلة لتجنب التعليق
-
         while (true) {
             $conn = @stream_socket_accept($socket, 10); // انتظار 10 ثوانٍ قبل المهلة
             
             if ($conn) {
                 $clientData = fread($conn, 1024); 
-                echo "📩 استقبلنا اتصال جديد: " . trim($clientData) . "\n";
-                fwrite($conn, "✅ تم استقبال رسالتك!\n"); 
+                $clientData = trim($clientData);
+                echo "📩 استقبلنا اتصال جديد: " . $clientData . "\n";
+
+                // تحليل البيانات القادمة من السكوتر
+                if (strpos($clientData, "*SCOR") !== false) {
+                    echo "✅ الطلب قادم من السكوتر\n";
+
+                    // إرسال رد إلى السكوتر
+                    $command = "*CMD,LOCK#"; // مثال: قفل السكوتر
+                    fwrite($conn, $command . "\n");
+                    echo "🚀 تم إرسال الأمر إلى السكوتر: $command\n";
+                }
+
                 fclose($conn);
             } else {
                 echo "⏳ لم يتم استقبال أي اتصال، الاستمرار في الاستماع...\n";
@@ -36,5 +45,4 @@ class TcpServer
 
         fclose($socket);
     }
-
 }

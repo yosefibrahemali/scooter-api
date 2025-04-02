@@ -7,24 +7,29 @@ use Illuminate\Http\Request;
 use App\Services\TcpService;
 
 
-class TestController
+class TcpClient
 {
 
-    public function index()
-    {
-        $scooters = ScooterConnection::whereNull('disconnected_at')->get();
-        return view('test', compact('scooters'));
-    }
+    protected $host = "127.0.0.1"; // عنوان الخادم
+    protected $port = 5000;       // نفس المنفذ الذي يستمع عليه السكوتر
 
-    
-    public function sendCommand()
+    public function sendUnlockCommand($imei)
     {
-        $imei = "868351077123154";
-        $commandType = "R0";
-        $value = 0;
+        $timestamp = time() * 1000; // تحويل الوقت إلى ميلي ثانية
+        $command = "*SCOS,OM,{$imei},R0,0,20,1234,{$timestamp}#\n";
 
-        $response = TcpService::sendCommand($imei, $commandType, $value);
-        
-        return response()->json(['message' => $response]);
+        $socket = @fsockopen($this->host, $this->port, $errno, $errstr, 5);
+
+        if (!$socket) {
+            die("❌ فشل الاتصال بالخادم: $errstr ($errno)\n");
+        }
+
+        fwrite($socket, $command); // إرسال الأمر
+        echo "🚀 تم إرسال الأمر: $command\n";
+
+        $response = fread($socket, 1024); // استقبال الرد
+        echo "📩 الرد من السكوتر: $response\n";
+
+        fclose($socket);
     }
 }

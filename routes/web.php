@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\TcpClient;
 use App\Http\Controllers\TestController;
 use Illuminate\Support\Facades\Route;
 
@@ -13,6 +14,10 @@ use Illuminate\Support\Facades\Route;
 | contains the "web" middleware group. Now create something great!
 |
 */
-Route::get('/send-command', [TestController::class, 'sendCommand']);
+Route::get('/unlock', function(){
+    $client = new TcpClient();
+    $client->sendUnlockCommand('868351077123154');
 
-Route::get('/', [TestController::class, 'index']);
+});
+
+// Route::get('/', [TestController::class, 'index']);
