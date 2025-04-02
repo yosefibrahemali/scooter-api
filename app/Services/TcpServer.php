@@ -2,53 +2,44 @@
 
 namespace App\Services;
 
-class TcpServer
+use Ratchet\MessageComponentInterface;
+use Ratchet\ConnectionInterface;
+
+class TcpServer implements MessageComponentInterface
 {
-    protected $host = "0.0.0.0";
-    protected $port = 5000;
-    protected $connections = []; // حفظ الاتصالات النشطة
+    protected $connections = [];
 
-    public function start()
+    public function onOpen(ConnectionInterface $conn)
     {
-        $socket = stream_socket_server("tcp://$this->host:$this->port", $errno, $errstr);
+        echo "✅ New connection: {$conn->resourceId}\n";
+        $this->connections[$conn->resourceId] = $conn;
+    }
 
-        if (!$socket) {
-            die("❌ Failed to start the server: $errstr ($errno)\n");
+    public function onMessage(ConnectionInterface $conn, $msg)
+    {
+        echo "📩 Received data: $msg\n";
+
+        if (preg_match('/\*SCOR,OM,(\d+),/', $msg, $matches)) {
+            $imei = $matches[1];
+            echo "🔗 IMEI Detected: $imei\n";
+            $this->connections[$imei] = $conn;
+            echo "✅ Connection stored for IMEI: $imei\n";
         }
 
-        echo "🔵 TCP Server running on {$this->host}:{$this->port}...\n";
+        // رد تلقائي (اختياري)
+        $conn->send("✅ Server received your message!");
+    }
 
-      
-        while (true) {
-            $conn = @stream_socket_accept($socket, 10);
-        
-            if ($conn) {
-                echo "✅ Connection established!\n";
-        
-                stream_set_blocking($conn, false);
-                $clientData = fread($conn, 1024);
-                $clientData = trim($clientData);
-        
-                if (!empty($clientData)) {
-                    echo "📩 Received data: $clientData\n";
-        
-                    if (preg_match('/\*SCOR,OM,(\d+),/', $clientData, $matches)) {
-                        $imei = $matches[1];
-                        echo "🔗 IMEI Detected: $imei\n";
-                        $this->connections[$imei] = $conn;
-                        echo "✅ Connection stored for IMEI: $imei\n";
-                    } else {
-                        echo "⚠️ IMEI not found in message: $clientData\n";
-                    }
-                } else {
-                    echo "⚠️ Received empty data from client\n";
-                }
-            }
-        
-            usleep(500000);
-        }
+    public function onClose(ConnectionInterface $conn)
+    {
+        echo "❌ Connection closed: {$conn->resourceId}\n";
+        unset($this->connections[$conn->resourceId]);
+    }
 
-        
+    public function onError(ConnectionInterface $conn, \Exception $e)
+    {
+        echo "⚠️ Error: {$e->getMessage()}\n";
+        $conn->close();
     }
 
     public function sendUnlockCommand($imei)
@@ -58,24 +49,10 @@ class TcpServer
         }
 
         $conn = $this->connections[$imei];
+        $command = "*SCOS,OM,{$imei},L0,55,1234," . time() . "#\n";
+        $conn->send($command);
 
-        $key = 55;
-        $userId = 1234;
-        $timestamp = time();
-
-        $command = "*SCOS,OM,{$imei},L0,{$key},{$userId},{$timestamp}#\n";
-
-        fwrite($conn, $command);
         echo "🚀 Sent unlock command to IMEI {$imei}: $command\n";
-
         return "✅ Unlock command sent to IMEI: $imei";
     }
 }
-
-
-
-
-
-
-
-
