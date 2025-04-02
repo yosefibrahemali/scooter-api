@@ -4,6 +4,7 @@ use App\Http\Controllers\ScooterController;
 use App\Http\Controllers\TcpClient;
 use App\Http\Controllers\TcpCommandController;
 use App\Http\Controllers\TestController;
+use App\Services\TcpServer;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 
@@ -31,4 +32,9 @@ Route::get('/start-server', function () {
 
 // Route::get('/unlock-scooter/{imei}', [ScooterController::class, 'unlockScooter']);
 
-Route::get('/unlock/{imei}', [ScooterController::class, 'unlockScooter']);
+Route::get('/unlock/{imei}', function ($imei) {
+    $server = new TcpServer();
+    return response()->json([
+        'message' => $server->sendUnlockCommand($imei)
+    ]);
+});
