@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ScooterController;
 use App\Http\Controllers\TcpClient;
 use App\Http\Controllers\TestController;
 use Illuminate\Support\Facades\Route;
@@ -19,5 +20,7 @@ Route::get('/unlock', function(){
     $client->sendUnlockCommand('868351077123154');
 
 });
+
+Route::get('/unlock/{imei}', [ScooterController::class, 'unlockScooter']);
 
 // Route::get('/', [TestController::class, 'index']);
