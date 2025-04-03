@@ -37,7 +37,16 @@ class TcpServerService
         $this->server = new TcpServer("0.0.0.0:$port", $this->loop);
 
         $this->server->on('connection', function (ConnectionInterface $connection) {
-            // ... (الكود الحالي)
+            $remoteAddress = $connection->getRemoteAddress();
+            $this->connections[$remoteAddress] = $connection;
+
+            $connection->on('data', function ($data) use ($connection, $remoteAddress) {
+                $this->handleIncomingData($data, $connection, $remoteAddress);
+            });
+
+            $connection->on('close', function () use ($remoteAddress) {
+                $this->handleDisconnection($remoteAddress);
+            });
         });
 
         echo "Server running on port {$port}\n";
