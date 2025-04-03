@@ -17,15 +17,29 @@ class ScooterController extends Controller
 
     public function unlock(Request $request)
     {
+        $request->validate([
+            'scooter_id' => 'required|string',
+            'user_id' => 'required|string'
+        ]);
+
         $scooterId = $request->input('scooter_id');
         $userId = $request->input('user_id');
         $timestamp = time();
         
         $command = "*SCOS,OM,{$scooterId},L0,55,{$userId},{$timestamp}#\n";
         
-        // محاولة الإرسال 3 مرات مع تأخير بينها
+        if (!$this->tcpServer->isScooterConnected($scooterId)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Scooter is not currently connected',
+                'command' => $command
+            ], 408);
+        }
+
         $attempts = 0;
-        while ($attempts < 3) {
+        $maxAttempts = 3;
+        
+        while ($attempts < $maxAttempts) {
             if ($this->tcpServer->sendCommandToScooter($scooterId, $command)) {
                 return response()->json([
                     'success' => true,
@@ -33,15 +47,17 @@ class ScooterController extends Controller
                     'command' => $command
                 ]);
             }
-            sleep(1);
+            
             $attempts++;
+            if ($attempts < $maxAttempts) {
+                sleep(1); // انتظر ثانية قبل المحاولة التالية
+            }
         }
         
         return response()->json([
             'success' => false,
-            'message' => 'Scooter not connected after 3 attempts',
+            'message' => 'Failed to send command after 3 attempts',
             'command' => $command
         ], 408);
     }
-    
 }
