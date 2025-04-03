@@ -17,47 +17,46 @@ class ScooterController extends Controller
 
     public function unlock(Request $request)
     {
-        $request->validate([
-            'scooter_id' => 'required|string',
-            'user_id' => 'required|string'
+        $validated = $request->validate([
+            'scooter_id' => 'required|string|size:15',
+            'user_id' => 'required|string|min:4'
         ]);
 
-        $scooterId = $request->input('scooter_id');
-        $userId = $request->input('user_id');
+        $scooterId = $validated['scooter_id'];
+        $userId = $validated['user_id'];
         $timestamp = time();
-        
         $command = "*SCOS,OM,{$scooterId},L0,55,{$userId},{$timestamp}#\n";
-        
-        if (!$this->tcpServer->isScooterConnected($scooterId)) {
+
+        // التحقق من اتصال السكوتر أولاً
+        $connectedScooters = $this->tcpServer->getConnectedScooters();
+        if (!in_array($scooterId, $connectedScooters)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Scooter is not currently connected',
+                'message' => 'Scooter not connected. Currently connected: ' . implode(', ', $connectedScooters),
                 'command' => $command
             ], 408);
         }
 
-        $attempts = 0;
-        $maxAttempts = 3;
-        
-        while ($attempts < $maxAttempts) {
-            if ($this->tcpServer->sendCommandToScooter($scooterId, $command)) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Command sent successfully',
-                    'command' => $command
-                ]);
-            }
-            
-            $attempts++;
-            if ($attempts < $maxAttempts) {
-                sleep(1); // انتظر ثانية قبل المحاولة التالية
-            }
+        // محاولة الإرسال
+        if ($this->tcpServer->sendCommandToScooter($scooterId, $command)) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Command sent successfully',
+                'command' => $command
+            ]);
         }
-        
+
         return response()->json([
             'success' => false,
-            'message' => 'Failed to send command after 3 attempts',
+            'message' => 'Failed to send command',
             'command' => $command
-        ], 408);
+        ], 500);
+    }
+
+    public function listConnected()
+    {
+        return response()->json([
+            'connected_scooters' => $this->tcpServer->getConnectedScooters()
+        ]);
     }
 }

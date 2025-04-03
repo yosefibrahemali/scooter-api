@@ -22,8 +22,8 @@ use App\Http\Controllers\TcpCommandController;
 
 
 
+Route::get('/scooter/connected', [ScooterController::class, 'listConnected']);
 Route::post('/scooter/unlock', [ScooterController::class, 'unlock']);
-
 
 // Route::post('/unlock-scooter', [TcpCommandController::class, 'sendUnlock']);
 
