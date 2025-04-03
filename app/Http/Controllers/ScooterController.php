@@ -8,13 +8,6 @@ use Illuminate\Routing\Controller;
 
 class ScooterController extends Controller
 {
-    protected $tcpServer;
-
-    public function __construct(TcpServerService $tcpServer)
-    {
-        $this->tcpServer = $tcpServer;
-    }
-
     public function unlock(Request $request)
     {
         $validated = $request->validate([
@@ -22,41 +15,36 @@ class ScooterController extends Controller
             'user_id' => 'required|string|min:4'
         ]);
 
-        $scooterId = $validated['scooter_id'];
-        $userId = $validated['user_id'];
-        $timestamp = time();
-        $command = "*SCOS,OM,{$scooterId},L0,55,{$userId},{$timestamp}#\n";
-
-        // التحقق من اتصال السكوتر أولاً
-        $connectedScooters = $this->tcpServer->getConnectedScooters();
-        if (!in_array($scooterId, $connectedScooters)) {
+        $server = TcpServerService::getInstance();
+        if (!$server) {
             return response()->json([
                 'success' => false,
-                'message' => 'Scooter not connected. Currently connected: ' . implode(', ', $connectedScooters),
+                'message' => 'TCP server not running'
+            ], 503);
+        }
+
+        $scooterId = $validated['scooter_id'];
+        $command = $this->buildCommand($scooterId, $validated['user_id']);
+
+        if (!$server->sendCommandToScooter($scooterId, $command)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send command to scooter',
+                'connected_scooters' => $server->getConnectedScooters(),
                 'command' => $command
             ], 408);
         }
 
-        // محاولة الإرسال
-        if ($this->tcpServer->sendCommandToScooter($scooterId, $command)) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Command sent successfully',
-                'command' => $command
-            ]);
-        }
-
         return response()->json([
-            'success' => false,
-            'message' => 'Failed to send command',
+            'success' => true,
+            'message' => 'Command sent successfully',
             'command' => $command
-        ], 500);
+        ]);
     }
 
-    public function listConnected()
+    protected function buildCommand($scooterId, $userId)
     {
-        return response()->json([
-            'connected_scooters' => $this->tcpServer->getConnectedScooters()
-        ]);
+        $timestamp = time();
+        return "*SCOS,OM,{$scooterId},L0,55,{$userId},{$timestamp}#\n";
     }
 }

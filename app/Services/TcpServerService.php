@@ -8,17 +8,25 @@ use React\EventLoop\Factory;
 
 class TcpServerService
 {
+    protected static $instance = null;
     protected $loop;
     protected $server;
     protected $connections = [];
     protected $scooterConnections = [];
-    protected $scooterAddressMap = []; // خريطة لعناوين السكوتر
+    protected $scooterAddressMap = [];
 
-    public function __construct()
+   public function __construct()
     {
         $this->loop = Factory::create();
+        self::$instance = $this;
     }
 
+    public static function getInstance()
+    {
+        return self::$instance;
+    }
+
+    
     public function start($port = 5000)
     {
         $this->server = new TcpServer("0.0.0.0:$port", $this->loop);
@@ -26,28 +34,93 @@ class TcpServerService
         $this->server->on('connection', function (ConnectionInterface $connection) {
             $remoteAddress = $connection->getRemoteAddress();
             $this->connections[$remoteAddress] = $connection;
-            
-            echo "New connection from {$remoteAddress}\n";
 
             $connection->on('data', function ($data) use ($connection, $remoteAddress) {
-                echo "Received from {$remoteAddress}: {$data}";
-                
-                // معالجة البيانات الواردة من السكوتر
-                $this->handleScooterData($data, $connection);
+                $this->handleIncomingData($data, $connection, $remoteAddress);
             });
 
             $connection->on('close', function () use ($remoteAddress) {
-                echo "Connection {$remoteAddress} closed\n";
-                unset($this->connections[$remoteAddress]);
+                $this->handleDisconnection($remoteAddress);
             });
         });
 
-        echo "Server running on port {$port}\n";
         $this->loop->run();
+    }
+    protected function handleDisconnection($remoteAddress)
+    {
+        // البحث عن معرف السكوتر المرتبط بعنوان الاتصال
+        $scooterId = array_search($remoteAddress, $this->scooterAddressMap);
+        
+        if ($scooterId !== false) {
+            echo "[DISCONNECT] Scooter {$scooterId} disconnected\n";
+            unset($this->scooterConnections[$scooterId]);
+            unset($this->scooterAddressMap[$scooterId]);
+        }
+        
+        if (isset($this->connections[$remoteAddress])) {
+            unset($this->connections[$remoteAddress]);
+        }
+        
+        echo "[STATUS] Active connections: " . count($this->connections) . "\n";
     }
 
 
-   
+    protected function handleIncomingData($data, $connection, $remoteAddress)
+    {
+        $cleanData = trim($data);
+        echo "Raw data from {$remoteAddress}: " . bin2hex($cleanData) . "\n";
+
+        if (preg_match('/\*SCOR,OM,(\d{15}),([^,#]+)/', $cleanData, $matches)) {
+            $scooterId = $matches[1];
+            $commandType = $matches[2];
+
+            // تحديث بيانات الاتصال
+            $this->updateConnection($scooterId, $connection, $remoteAddress);
+
+            switch ($commandType) {
+                case 'Q0':
+                    echo $cleanData;
+                    break;
+                // ... معالجات أخرى ...
+                default:
+                    echo $cleanData;
+            }
+
+            $connection->write("*ACK,{$scooterId},{$commandType}#\n");
+        } else {
+            echo $connection, $remoteAddress, $cleanData;
+        }
+    }
+
+
+    protected function updateConnection($scooterId, $connection, $remoteAddress)
+    {
+        $this->scooterConnections[$scooterId] = $connection;
+        $this->scooterAddressMap[$scooterId] = $remoteAddress;
+        $this->connections[$remoteAddress] = $connection;
+        
+        echo "[ACTIVE] Scooter {$scooterId} at {$remoteAddress}\n";
+        echo "[CONNECTIONS] Total: " . count($this->scooterConnections) . "\n";
+    }
+
+    public function sendCommandToScooter($scooterId, $command)
+    {
+        if (!isset($this->scooterConnections[$scooterId])) {
+            echo "[ERROR] Scooter {$scooterId} not in connections\n";
+            echo "[ACTIVE_SCOOTERS] " . implode(', ', array_keys($this->scooterConnections)) . "\n";
+            return false;
+        }
+
+        try {
+            $this->scooterConnections[$scooterId]->write($command);
+            echo "[SENT] Command to {$scooterId}: {$command}";
+            return true;
+        } catch (\Exception $e) {
+            $this->cleanupConnection($scooterId);
+            echo "[SEND_ERROR] {$scooterId}: " . $e->getMessage() . "\n";
+            return false;
+        }
+    }
     protected function handleScooterData($data, ConnectionInterface $connection)
     {
         if (preg_match('/\*SCOR,OM,(\d+),([A-Za-z0-9]+)/', $data, $matches)) {
@@ -85,26 +158,6 @@ class TcpServerService
         echo "[ERROR] Invalid data format from {$connection->getRemoteAddress()}\n";
         $connection->write("*ERROR,INVALID_FORMAT#\n");
     }
-
-    public function sendCommandToScooter($scooterId, $command)
-    {
-        if (!isset($this->scooterConnections[$scooterId])) {
-            echo "[ERROR] Scooter {$scooterId} not in active connections list\n";
-            echo "[DEBUG] Active scooters: " . json_encode(array_keys($this->scooterConnections)) . "\n";
-            return false;
-        }
-
-        try {
-            $this->scooterConnections[$scooterId]->write($command);
-            echo "[COMMAND] Successfully sent to {$scooterId}: {$command}";
-            return true;
-        } catch (\Exception $e) {
-            echo "[ERROR] Failed to send to {$scooterId}: " . $e->getMessage() . "\n";
-            $this->cleanupConnection($scooterId);
-            return false;
-        }
-    }
-
     protected function cleanupConnection($scooterId)
     {
         if (isset($this->scooterAddressMap[$scooterId])) {
@@ -115,7 +168,6 @@ class TcpServerService
         unset($this->scooterAddressMap[$scooterId]);
         echo "[CLEANUP] Removed scooter {$scooterId} from connections\n";
     }
-
     public function getConnectedScooters()
     {
         return array_keys($this->scooterConnections);
