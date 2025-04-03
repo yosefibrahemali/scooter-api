@@ -14,8 +14,9 @@ class TcpServerService
     protected $connections = [];
     protected $scooterConnections = [];
     protected $scooterAddressMap = [];
+    protected $isRunning = false;
 
-   public function __construct()
+    public function __construct()
     {
         $this->loop = Factory::create();
         self::$instance = $this;
@@ -23,29 +24,35 @@ class TcpServerService
 
     public static function getInstance()
     {
-        return self::$instance;
+        return self::$instance ?? new self();
     }
 
-    
     public function start($port = 5000)
     {
+        if ($this->isRunning) {
+            return;
+        }
+
+        $this->isRunning = true;
         $this->server = new TcpServer("0.0.0.0:$port", $this->loop);
 
         $this->server->on('connection', function (ConnectionInterface $connection) {
-            $remoteAddress = $connection->getRemoteAddress();
-            $this->connections[$remoteAddress] = $connection;
-
-            $connection->on('data', function ($data) use ($connection, $remoteAddress) {
-                $this->handleIncomingData($data, $connection, $remoteAddress);
-            });
-
-            $connection->on('close', function () use ($remoteAddress) {
-                $this->handleDisconnection($remoteAddress);
-            });
+            // ... (الكود الحالي)
         });
 
+        echo "Server running on port {$port}\n";
         $this->loop->run();
     }
+
+    public function isRunning()
+    {
+        return $this->isRunning;
+    }
+
+
+    
+
+    
     protected function handleDisconnection($remoteAddress)
     {
         // البحث عن معرف السكوتر المرتبط بعنوان الاتصال

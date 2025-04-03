@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ScooterController;
 use App\Http\Controllers\TcpCommandController;
+use App\Services\TcpServerService;
 
 /*
 |--------------------------------------------------------------------------
@@ -22,6 +23,15 @@ use App\Http\Controllers\TcpCommandController;
 
 
 
+Route::get('/scooter/status', function() {
+    $server = TcpServerService::getInstance();
+    
+    return response()->json([
+        'running' => $server->isRunning(),
+        'connected_scooters' => $server->getConnectedScooters(),
+        'total_connections' => count($server->getConnectedScooters())
+    ]);
+});
 Route::get('/scooter/connected', [ScooterController::class, 'listConnected']);
 Route::post('/scooter/unlock', [ScooterController::class, 'unlock']);
 

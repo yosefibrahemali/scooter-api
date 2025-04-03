@@ -6,45 +6,49 @@ use App\Services\TcpServerService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 
+
 class ScooterController extends Controller
 {
     public function unlock(Request $request)
     {
-        $validated = $request->validate([
-            'scooter_id' => 'required|string|size:15',
-            'user_id' => 'required|string|min:4'
-        ]);
-
         $server = TcpServerService::getInstance();
-        if (!$server) {
+        
+        if (!$server->isRunning()) {
             return response()->json([
                 'success' => false,
-                'message' => 'TCP server not running'
+                'message' => 'TCP server not running',
+                'solution' => 'Run the server first with: php artisan tcp:server 5000'
             ], 503);
         }
 
-        $scooterId = $validated['scooter_id'];
-        $command = $this->buildCommand($scooterId, $validated['user_id']);
+        $scooterId = $request->input('scooter_id');
+        $connectedScooters = $server->getConnectedScooters();
 
-        if (!$server->sendCommandToScooter($scooterId, $command)) {
+        if (!in_array($scooterId, $connectedScooters)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to send command to scooter',
-                'connected_scooters' => $server->getConnectedScooters(),
+                'message' => 'Scooter not connected',
+                'connected_scooters' => $connectedScooters,
+                'solution' => 'Ensure scooter is powered on and connected to network'
+            ], 404);
+        }
+
+        $command = $this->buildCommand($scooterId, $request->input('user_id'));
+        
+        if ($server->sendCommandToScooter($scooterId, $command)) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Command sent successfully',
                 'command' => $command
-            ], 408);
+            ]);
         }
 
         return response()->json([
-            'success' => true,
-            'message' => 'Command sent successfully',
+            'success' => false,
+            'message' => 'Failed to send command',
             'command' => $command
-        ]);
+        ], 500);
     }
 
-    protected function buildCommand($scooterId, $userId)
-    {
-        $timestamp = time();
-        return "*SCOS,OM,{$scooterId},L0,55,{$userId},{$timestamp}#\n";
-    }
+    // ... (بقية الدوال)
 }
