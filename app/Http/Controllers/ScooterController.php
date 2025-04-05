@@ -50,5 +50,62 @@ class ScooterController extends Controller
         ], 500);
     }
 
+    public function unlockScooter($imei, $userId)
+    {
+        $host = '41.254.70.174';
+        $port = 24109;
+
+        $timestamp = time();
+        $keyTime = 20; // مدة صلاحية المفتاح
+
+        // 1. الاتصال بالسيرفر
+        $socket = @stream_socket_client("tcp://$host:$port", $errno, $errstr, 10);
+
+        if (!$socket) {
+            return "فشل في الاتصال: $errstr ($errno)";
+        }
+
+        // 2. إرسال أمر R0 لطلب المفتاح
+        $r0Command = "*SCOS,OM,{$imei},R0,0,{$keyTime},{$userId},{$timestamp}#\n";
+        fwrite($socket, $r0Command);
+
+        // 3. قراءة الرد للحصول على المفتاح
+        $response = fread($socket, 1024);
+
+        if (!$response || !str_contains($response, '*SCOR')) {
+            fclose($socket);
+            return "فشل في استقبال رد R0";
+        }
+
+        // 4. استخراج المفتاح من الرد
+        // مثال الرد: *SCOR,OM,123456789123456,R0,55,1234,1497689816#
+        preg_match('/\*SCOR,OM,'.$imei.',R0,(\d+),'.$userId.','.$timestamp.'#/', $response, $matches);
+        
+        if (!isset($matches[1])) {
+            fclose($socket);
+            return "لم يتم العثور على المفتاح في الرد";
+        }
+
+        $operationKey = $matches[1];
+
+        // 5. إرسال أمر L0 لفتح القفل باستخدام المفتاح
+        $l0Command = "*SCOS,OM,{$imei},L0,{$operationKey},{$userId},{$timestamp}#\n";
+        fwrite($socket, $l0Command);
+
+        // 6. استقبال الرد النهائي من أمر L0
+        $finalResponse = fread($socket, 1024);
+
+        fclose($socket);
+
+        return [
+            'r0_sent' => $r0Command,
+            'r0_response' => $response,
+            'operation_key' => $operationKey,
+            'l0_sent' => $l0Command,
+            'l0_response' => $finalResponse,
+        ];
+    }
+
+
     // ... (بقية الدوال)
 }

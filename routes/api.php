@@ -22,6 +22,16 @@ use App\Services\TcpServerService;
 // use App\Http\Controllers\ScooterController;
 
 
+Route::get('/unlock-scooter', function () {
+    $imei = '868351077123154'; // رقم الجهاز
+    $userId = '1234';          // رقم المستخدم
+
+    $result = (new \App\Http\Controllers\ScooterController)->unlockScooter($imei, $userId);
+    
+    return response()->json($result);
+});
+
+
 
 Route::get('/scooter/status', function() {
     $server = TcpServerService::getInstance();
@@ -35,7 +45,6 @@ Route::get('/scooter/status', function() {
 Route::get('/scooter/connected', [ScooterController::class, 'listConnected']);
 Route::post('/scooter/unlock', [ScooterController::class, 'unlock']);
 
-// Route::post('/unlock-scooter', [TcpCommandController::class, 'sendUnlock']);
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
