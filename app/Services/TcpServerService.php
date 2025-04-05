@@ -7,7 +7,7 @@ use React\Socket\ConnectionInterface;
 use React\Socket\TcpServer;
 use Illuminate\Support\Facades\Redis;
 use React\EventLoop\Loop;
-
+use Clue\React\Redis\Factory as RedisFactory;
 
 class TcpServerService
 {
@@ -136,7 +136,7 @@ class TcpServerService
 
     public function listenForRedisCommands()
     {
-        $redisClient = new Factory($this->loop);
+        $redisClient = new RedisFactory($this->loop);
         $redisClient->createLazyClient('redis://127.0.0.1:6379')->then(function ($client) {
             $client->on('message', function ($channel, $message) {
                 echo "[REDIS] Message on {$channel}: {$message}\n";
