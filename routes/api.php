@@ -22,20 +22,22 @@ use App\Services\TcpServerService;
 // use App\Http\Controllers\ScooterController;
 
 
+use Illuminate\Support\Facades\Redis;
+
 Route::get('/unlock-scooter/{id}', function ($id) {
-    $tcp = TcpServerService::getInstance();
-
-    if (!$tcp->isRunning()) {
-        return response()->json(['status' => 'error', 'message' => 'TCP server not running']);
-    }
-
-    $success = $tcp->unlockScooter($id);
+    Redis::publish('scooter-commands', json_encode([
+        'command' => 'unlock',
+        'scooterId' => $id,
+        'userId' => '1234'
+    ]));
 
     return response()->json([
-        'status' => $success ? 'ok' : 'failed',
-        'message' => $success ? "Unlocking command sent to scooter {$id}" : "Failed to send command"
+        'status' => 'ok',
+        'message' => "Unlock command published for scooter {$id}"
     ]);
 });
+
+
 
 
 Route::get('/scooter/status', function() {
