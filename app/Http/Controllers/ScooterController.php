@@ -50,10 +50,10 @@ class ScooterController extends Controller
         ], 500);
     }
 
-    public function unlockScooter($imei, $userId)
+    public function unlockScooter($imei, $userId,$port)
     {
         $host = '41.254.70.174';
-        $port = 24109;
+        // $port = 24109;
 
         $timestamp = time();
         $keyTime = 20; // مدة صلاحية المفتاح

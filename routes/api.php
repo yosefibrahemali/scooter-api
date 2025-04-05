@@ -22,11 +22,11 @@ use App\Services\TcpServerService;
 // use App\Http\Controllers\ScooterController;
 
 
-Route::get('/unlock-scooter', function () {
+Route::get('/unlock-scooter/{port}', function ($port) {
     $imei = '868351077123154'; // رقم الجهاز
     $userId = '1234';          // رقم المستخدم
 
-    $result = (new \App\Http\Controllers\ScooterController)->unlockScooter($imei, $userId);
+    $result = (new \App\Http\Controllers\ScooterController)->unlockScooter($imei, $userId,$port);
     
     return response()->json($result);
 });
