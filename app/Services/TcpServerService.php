@@ -22,6 +22,41 @@ class TcpServerService
         self::$instance = $this;
     }
 
+    public function unlockScooter($scooterId, $userId = '1234')
+    {
+        $timestamp = time();
+        $r0Command = "*SCOS,OM,{$scooterId},R0,0,20,{$userId},{$timestamp}#\n";
+        $l0Command = "*SCOS,OM,{$scooterId},L0,{$userId},{$timestamp}#\n";
+
+        if (!isset($this->scooterConnections[$scooterId])) {
+            echo "[ERROR] Scooter {$scooterId} not connected\n";
+            return false;
+        }
+
+        try {
+            // إرسال R0 أولاً
+            $this->scooterConnections[$scooterId]->write($r0Command);
+            echo "[SENT] R0 to {$scooterId}: {$r0Command}";
+
+            // تأخير بسيط قبل إرسال L0
+            $this->loop->addTimer(1.5, function () use ($scooterId, $l0Command) {
+                if (isset($this->scooterConnections[$scooterId])) {
+                    $this->scooterConnections[$scooterId]->write($l0Command);
+                    echo "[SENT] L0 to {$scooterId}: {$l0Command}";
+                } else {
+                    echo "[ERROR] Scooter {$scooterId} disconnected before L0\n";
+                }
+            });
+
+            return true;
+        } catch (\Exception $e) {
+            $this->cleanupConnection($scooterId);
+            echo "[ERROR] unlockScooter failed: " . $e->getMessage() . "\n";
+            return false;
+        }
+    }
+
+
     public static function getInstance()
     {
         return self::$instance ?? new self();

@@ -22,15 +22,20 @@ use App\Services\TcpServerService;
 // use App\Http\Controllers\ScooterController;
 
 
-Route::get('/unlock-scooter/{port}', function ($port) {
-    $imei = '868351077123154'; // رقم الجهاز
-    $userId = '1234';          // رقم المستخدم
+Route::get('/unlock-scooter/{id}', function ($id) {
+    $tcp = TcpServerService::getInstance();
 
-    $result = (new \App\Http\Controllers\ScooterController)->unlockScooter($imei, $userId,$port);
-    
-    return response()->json($result);
+    if (!$tcp->isRunning()) {
+        return response()->json(['status' => 'error', 'message' => 'TCP server not running']);
+    }
+
+    $success = $tcp->unlockScooter($id);
+
+    return response()->json([
+        'status' => $success ? 'ok' : 'failed',
+        'message' => $success ? "Unlocking command sent to scooter {$id}" : "Failed to send command"
+    ]);
 });
-
 
 
 Route::get('/scooter/status', function() {
