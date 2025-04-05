@@ -137,7 +137,7 @@ class TcpServerService
     public function listenForRedisCommands()
     {
         $redisClient = new RedisFactory($this->loop);
-        $redisClient->createLazyClient('redis://127.0.0.1:6379')->then(function ($client) {
+        $redisClient->createLazyClient('redis://127.0.0.1:5000')->then(function ($client) {
             $client->on('message', function ($channel, $message) {
                 echo "[REDIS] Message on {$channel}: {$message}\n";
 
