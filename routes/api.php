@@ -31,13 +31,12 @@ use Milon\Barcode\Facades\DNS1DFacade;
 
 
 use Mike42\Escpos\Printer;
-use Mike42\Escpos\PrintConnectors\WindowsPrintConnector;
+use Mike42\Escpos\PrintConnectors\SMBPrintConnector;
 
 Route::get('/print/{code}', function ($code) {
-    $printerName = "Xprinter XP-365B";
-
     try {
-        $connector = new WindowsPrintConnector($printerName);
+        // استخدم اسم السيرفر (أو IP) والمسار المشترك للطابعة
+        $connector = new SMBPrintConnector("smb://WORKGROUP/username:password@windows-pc-name/Xprinter_XP-365B");
         $printer = new Printer($connector);
 
         $printer->setJustification(Printer::JUSTIFY_CENTER);
@@ -53,7 +52,6 @@ Route::get('/print/{code}', function ($code) {
         return response()->json(['error' => $e->getMessage()]);
     }
 });
-
 
 
 
