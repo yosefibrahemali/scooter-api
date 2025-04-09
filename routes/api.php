@@ -29,14 +29,18 @@ use Milon\Barcode\Facades\DNS1DFacade;
 
 
 
-
 use Mike42\Escpos\Printer;
 use Mike42\Escpos\PrintConnectors\SMBPrintConnector;
 
 Route::get('/print/{code}', function ($code) {
     try {
-        // استخدم اسم السيرفر (أو IP) والمسار المشترك للطابعة
-        $connector = new SMBPrintConnector("smb://WORKGROUP/username:password@windows-pc-name/Xprinter_XP-365B");
+        // 🔧 عدّل بيانات المستخدم والكمبيوتر واسم الطابعة حسب حالتك
+        $username = 'YourWindowsUsername';
+        $password = 'YourWindowsPassword';
+        $ip = '192.168.1.10'; // IP جهاز ويندوز الذي موصّل عليه الطابعة
+        $printerShare = 'Xprinter'; // اسم المشاركة (Share name)
+
+        $connector = new SMBPrintConnector("smb://$username:$password@$ip/$printerShare");
         $printer = new Printer($connector);
 
         $printer->setJustification(Printer::JUSTIFY_CENTER);
@@ -52,6 +56,7 @@ Route::get('/print/{code}', function ($code) {
         return response()->json(['error' => $e->getMessage()]);
     }
 });
+
 
 
 
