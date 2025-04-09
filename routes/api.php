@@ -20,6 +20,46 @@ use App\Services\TcpServerService;
 
 
 // use App\Http\Controllers\ScooterController;
+use Barryvdh\DomPDF\Facade\Pdf;
+
+
+
+use Milon\Barcode\Facades\DNS1DFacade;
+
+
+
+
+
+use Mike42\Escpos\Printer;
+use Mike42\Escpos\PrintConnectors\WindowsPrintConnector;
+
+Route::get('/print/{code}', function ($code) {
+    $printerName = "Xprinter XP-365B";
+
+    try {
+        $connector = new WindowsPrintConnector($printerName);
+        $printer = new Printer($connector);
+
+        $printer->setJustification(Printer::JUSTIFY_CENTER);
+        $printer->text("***** باركود المنتج *****\n");
+        $printer->text("-------------------------\n");
+        $printer->text("الكود: $code\n");
+        $printer->feed(4);
+        $printer->cut();
+        $printer->close();
+
+        return response()->json(['status' => 'تمت الطباعة']);
+    } catch (Exception $e) {
+        return response()->json(['error' => $e->getMessage()]);
+    }
+});
+
+
+
+
+
+
+
 
 
 use Illuminate\Support\Facades\Redis;
